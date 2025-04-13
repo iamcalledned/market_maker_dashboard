@@ -9,6 +9,7 @@ from flask import request, jsonify
 from newspaper import Article
 from datetime import datetime
 from database import insert_articles
+from scraper import fetch_full_text_from_archive_md
 
 from scraper import fetch_full_text_with_playwright, extract_text_from_html
 
@@ -60,7 +61,7 @@ def add_url():
         if "archive.md" in url:
             full_text = fetch_full_text_from_archive_md(url)
             headline = full_text.split("\n")[0][:140] if full_text else "Untitled"
-            snippet = full_text[:500]
+            snippet = full_text
             source = "https://archive.md"
 
         else:
