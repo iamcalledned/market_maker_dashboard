@@ -528,44 +528,51 @@ Composite Score =
       return `${days}d ago`;
     }
     
-    function loadSnifferArticles() {
-      fetch("/api/news")
-        .then(res => res.json())
-        .then(data => {
-          const container = document.getElementById("news-sniffer-feed");
-          container.innerHTML = "";
-    
-          data.slice(0, 10).forEach(article => {
-            const card = document.createElement("div");
-            card.className = "bg-base-100 p-4 rounded-lg shadow-md flex flex-col justify-between";
-    
-            const title = document.createElement("a");
-            title.href = article.url;
-            title.target = "_blank";
-            title.rel = "noopener noreferrer";
-            title.className = "font-semibold text-accent hover:underline";
-            title.innerText = article.headline;
-    
-            const meta = document.createElement("div");
-            meta.className = "text-xs text-gray-400 mt-2";
-            meta.innerText = `${article.source} • ${formatRelativeTime(article.timestamp)}`;
-    
-            const snippet = document.createElement("p");
-            snippet.className = "text-sm mt-2";
-            snippet.innerText = article.snippet.slice(0, 200) + "...";
-    
-            card.appendChild(title);
-            card.appendChild(meta);
-            card.appendChild(snippet);
-            container.appendChild(card);
-          });
-        })
-        .catch(err => {
-          console.error("[NewsSniffer] Error fetching news:", err);
-          const container = document.getElementById("news-sniffer-feed");
-          container.innerHTML = "<p class='text-error'>Error loading news articles.</p>";
-        });
-    }
+    function stripHtml(html) {
+  const div = document.createElement("div");
+  div.innerHTML = html;
+  return div.textContent || div.innerText || "";
+}
+
+function loadSnifferArticles() {
+  fetch("/api/news")
+    .then(res => res.json())
+    .then(data => {
+      const container = document.getElementById("news-sniffer-feed");
+      container.innerHTML = "";
+
+      data.slice(0, 10).forEach(article => {
+        const card = document.createElement("div");
+        card.className = "bg-base-100 p-4 rounded-lg shadow-md flex flex-col justify-between space-y-2";
+
+        const title = document.createElement("a");
+        title.href = article.url;
+        title.target = "_blank";
+        title.rel = "noopener noreferrer";
+        title.className = "font-semibold text-accent hover:underline text-sm";
+        title.innerText = stripHtml(article.headline);
+
+        const meta = document.createElement("div");
+        meta.className = "text-xs text-gray-400";
+        meta.innerText = `${article.source} • ${formatRelativeTime(article.timestamp)}`;
+
+        const snippet = document.createElement("p");
+        snippet.className = "text-sm text-neutral-content";
+        snippet.innerText = stripHtml(article.snippet).slice(0, 220) + "...";
+
+        card.appendChild(title);
+        card.appendChild(meta);
+        card.appendChild(snippet);
+        container.appendChild(card);
+      });
+    })
+    .catch(err => {
+      console.error("[NewsSniffer] Error fetching news:", err);
+      const container = document.getElementById("news-sniffer-feed");
+      container.innerHTML = "<p class='text-error'>Error loading news articles.</p>";
+    });
+}
+
     
     document.addEventListener("DOMContentLoaded", loadSnifferArticles);
     </script>
