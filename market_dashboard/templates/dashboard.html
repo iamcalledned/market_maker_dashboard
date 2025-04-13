@@ -166,56 +166,12 @@
           </div>
         </div>
     
-<!-- Twitter Feeds -->
-<!-- Twitter Feeds -->
+<!-- Latest NewsSniffer Articles -->
 <div class="card bg-base-200 shadow-md p-6">
-  <h2 class="text-xl font-bold mb-6 text-primary text-center">Key Market Feeds</h2>
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-    
-    <!-- ZeroHedge -->
-    <div class="bg-base-100 p-3 rounded-lg shadow-md min-h-[650px] flex flex-col">
-      <div class="text-center font-semibold text-accent mb-2">Posts from @zerohedge</div>
-      <a class="twitter-timeline"
-         data-height="600"
-         data-theme="dark"
-         data-chrome="noborders noheader nofooter"
-         href="https://twitter.com/zerohedge">
-         Tweets by @zerohedge
-      </a>
-    </div>
-
-    <!-- FxMacro -->
-    <div class="bg-base-100 p-3 rounded-lg shadow-md min-h-[650px] flex flex-col">
-      <div class="text-center font-semibold text-accent mb-2">Posts from @fxmacro</div>
-      <a class="twitter-timeline"
-         data-height="600"
-         data-theme="dark"
-         data-chrome="noborders noheader nofooter"
-         href="https://twitter.com/fxmacro">
-         Tweets by @fxmacro
-      </a>
-    </div>
-
-    <!-- BespokeInvest -->
-    <div class="bg-base-100 p-3 rounded-lg shadow-md min-h-[650px] flex flex-col">
-      <div class="text-center font-semibold text-accent mb-2">Posts from @bespokeinvest</div>
-      <a class="twitter-timeline"
-         data-height="600"
-         data-theme="dark"
-         data-chrome="noborders noheader nofooter"
-         href="https://twitter.com/bespokeinvest">
-         Tweets by @bespokeinvest
-      </a>
-    </div>
-
+  <h2 class="text-xl font-bold mb-6 text-primary text-center">📰 Market Sniffer Headlines</h2>
+  <div id="news-sniffer-feed" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-sm text-neutral-content">
+    <!-- JS will populate here -->
   </div>
-</div>
-
-<!-- Load Twitter widget script once -->
-<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
-
-    
-      </div>
     </div>
     
 
@@ -558,6 +514,62 @@ Composite Score =
     }
   </script>
   <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
-  </body>
+  <script>
+    function formatRelativeTime(isoString) {
+      const now = new Date();
+      const then = new Date(isoString);
+      const diffMs = now - then;
+      const minutes = Math.floor(diffMs / (1000 * 60));
+      if (minutes < 1) return "just now";
+      if (minutes < 60) return `${minutes} min ago`;
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) return `${hours}h ago`;
+      const days = Math.floor(hours / 24);
+      return `${days}d ago`;
+    }
+    
+    function loadSnifferArticles() {
+      fetch("/api/news")
+        .then(res => res.json())
+        .then(data => {
+          const container = document.getElementById("news-sniffer-feed");
+          container.innerHTML = "";
+    
+          data.slice(0, 10).forEach(article => {
+            const card = document.createElement("div");
+            card.className = "bg-base-100 p-4 rounded-lg shadow-md flex flex-col justify-between";
+    
+            const title = document.createElement("a");
+            title.href = article.url;
+            title.target = "_blank";
+            title.rel = "noopener noreferrer";
+            title.className = "font-semibold text-accent hover:underline";
+            title.innerText = article.headline;
+    
+            const meta = document.createElement("div");
+            meta.className = "text-xs text-gray-400 mt-2";
+            meta.innerText = `${article.source} • ${formatRelativeTime(article.timestamp)}`;
+    
+            const snippet = document.createElement("p");
+            snippet.className = "text-sm mt-2";
+            snippet.innerText = article.snippet.slice(0, 200) + "...";
+    
+            card.appendChild(title);
+            card.appendChild(meta);
+            card.appendChild(snippet);
+            container.appendChild(card);
+          });
+        })
+        .catch(err => {
+          console.error("[NewsSniffer] Error fetching news:", err);
+          const container = document.getElementById("news-sniffer-feed");
+          container.innerHTML = "<p class='text-error'>Error loading news articles.</p>";
+        });
+    }
+    
+    document.addEventListener("DOMContentLoaded", loadSnifferArticles);
+    </script>
+    
+</body>
 </html>
 ``` 
