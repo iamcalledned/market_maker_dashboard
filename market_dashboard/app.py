@@ -12,10 +12,6 @@ import json
 from dotenv import load_dotenv
 load_dotenv()
 
-from database.create_database import init_db
-
-init_db()
-
 
 
 app = Flask(__name__)

@@ -43,16 +43,20 @@ def fetch_google_results(query, num_results=3):
 
     return results
 
+
 def fetch_all_google_topics():
     all_articles = []
     for category, query in NEWS_QUERIES.items():
+        print(f"[Fetcher] Querying category: {category}")
         try:
-            print(f"[Fetcher] Querying category: {category}")
             articles = fetch_google_results(query, num_results=3)
             all_articles.extend(articles)
+            time.sleep(2)  # ← ✅ Slow down!
         except Exception as e:
             print(f"[Fetcher] Error fetching results for '{category}': {e}")
+            time.sleep(4)  # ← ⏱ Backoff on error to cool down
     return all_articles
+
 
 def fetch_zerohedge_rss():
     feed_url = "https://feeds.feedburner.com/zerohedge/feed"
