@@ -49,13 +49,18 @@ def run_manual_scan():
     scheduled_news_scan()
     return jsonify({"status": "Scan triggered"})
 
-@app.route("/api/add_url", methods=["POST"])
+@app.route("/api/add_url", methods=["POST", "GET"])
 def add_url():
-    data = request.json
-    url = data.get("url")
+    if request.method == "POST":
+        data = request.get_json()
+        url = data.get("url") if data else None
+    else:  # GET method
+        url = request.args.get("url")
 
     if not url:
         return jsonify({"error": "Missing URL"}), 400
+
+    
 
     try:
         if "archive.md" in url:
