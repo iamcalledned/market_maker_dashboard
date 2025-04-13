@@ -10,6 +10,8 @@ from newspaper import Article
 from datetime import datetime
 from database import insert_articles
 
+from scraper import fetch_full_text_with_playwright, extract_text_from_html
+
 
 load_dotenv()
 
@@ -55,24 +57,31 @@ def add_url():
         return jsonify({"error": "Missing URL"}), 400
 
     try:
-        article = Article(url)
-        article.download()
-        article.parse()
-
-        headline = article.title
-        snippet = article.text[:500]
-        source = article.source_url or "external"
+        if "archive.md" in url:
+            html = fetch_full_text_with_playwright(url)
+            full_text = extract_text_from_html(html)
+            headline = full_text.split("\n")[0][:140] if full_text else "Untitled"
+            snippet = full_text[:500]
+            source = "https://archive.md"
+        else:
+            article = Article(url)
+            article.download()
+            article.parse()
+            headline = article.title
+            snippet = article.text[:500]
+            full_text = article.text
+            source = article.source_url or "external"
 
         article_data = [{
             "headline": headline,
             "url": url,
             "source": source,
             "snippet": snippet,
+            "full_text": full_text,
             "timestamp": datetime.utcnow().isoformat()
         }]
 
         insert_articles(article_data)
-
         return jsonify({"status": "saved", "article": article_data[0]})
 
     except Exception as e:
