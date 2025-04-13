@@ -5,6 +5,11 @@ from database import init_db, insert_articles, get_latest_articles
 import os
 from dotenv import load_dotenv
 
+
+SNIFFER_DB_PATH = os.getenv("SNIFFER_DB_PATH")
+DB_PATH = SNIFFER_DB_PATH
+
+
 load_dotenv()
 
 app = Flask(__name__)
