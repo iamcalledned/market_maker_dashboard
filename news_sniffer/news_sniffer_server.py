@@ -1,9 +1,13 @@
-from flask import Flask, jsonify
 from apscheduler.schedulers.background import BackgroundScheduler
 from fetcher import fetch_all_google_topics, fetch_zerohedge_rss
 from database import init_db, insert_articles, get_latest_articles
 import os
 from dotenv import load_dotenv
+from flask import request, jsonify
+from newspaper import Article
+from datetime import datetime
+from database import insert_articles
+
 
 load_dotenv()
 
@@ -39,6 +43,39 @@ def api_get_news():
 def run_manual_scan():
     scheduled_news_scan()
     return jsonify({"status": "Scan triggered"})
+
+@app.route("/api/add_url", methods=["POST"])
+def add_url():
+    data = request.json
+    url = data.get("url")
+
+    if not url:
+        return jsonify({"error": "Missing URL"}), 400
+
+    try:
+        article = Article(url)
+        article.download()
+        article.parse()
+
+        headline = article.title
+        snippet = article.text[:500]
+        source = article.source_url or "external"
+
+        article_data = [{
+            "headline": headline,
+            "url": url,
+            "source": source,
+            "snippet": snippet,
+            "timestamp": datetime.utcnow().isoformat()
+        }]
+
+        insert_articles(article_data)
+
+        return jsonify({"status": "saved", "article": article_data[0]})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == "__main__":
     scheduled_news_scan()  # Run immediately at startup
