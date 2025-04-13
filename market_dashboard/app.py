@@ -8,7 +8,7 @@ from threading import Thread
 from time import sleep
 from datetime import datetime
 import json
-from twitter_feed import twitter_feed
+
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -20,7 +20,7 @@ app = Flask(__name__)
 
 # Load .env for FRED key
 load_dotenv()
-app.register_blueprint(twitter_feed)
+
 FRED_API_KEY = os.getenv("FRED_API_KEY")
 TWITTER_BEARER_TOKEN = os.getenv("TWITTER_BEARER_TOKEN")
 fred = Fred(api_key=FRED_API_KEY)
@@ -327,12 +327,7 @@ def fetch_latest_tweets(username="zerohedge", count=5):
         print(f"[Twitter] Error fetching tweets: {e}")
         return []
 
-@app.route("/api/twitter_feed")
-def twitter_feed():
-    return jsonify({
-        "source": "zerohedge",
-        "tweets": fetch_latest_tweets()
-    })
+
 
 
 @app.route("/api/indicator/<path:indicator_name>")
