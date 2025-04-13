@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline' 'unsafe-eval';
+    connect-src 'self' https://www.whattogrill.com https://api.whattogrill.com http://localhost:8080/static/css/style.css;
+    img-src 'self' data:;
+    style-src 'self' 'unsafe-inline';
+    font-src 'self';">
+
+    <title>Welcome to What to Grill</title>
+    <link href="styles.css" rel="stylesheet"/>
+    <link href="what_to_grill_image_round.ico" rel="icon" type="image/x-icon"/>
+    <link rel="manifest" href="/manifest.json">
+</head>
+<body>
+  <main>
+    <div class="logo">
+      <img alt="What to Grill Logo" src="what_to_grill_image_round.png"/>
+      <!-- New block of text below the image -->
+      <div class="logo-text">
+          This is a beta product, things break and
+          sometimes just don't work.  If you seek
+          perfection, look elswhere
+      </div>
+    </div>
+      <div class="headline">
+          Get Ready to Ignite Your Culinary Game!
+      </div>
+        <!-- ... your existing main content ... -->
+    </main>
+    <footer>
+      <!--<form action="https://www.whattogrill.com/login" method="get"> -->
+        <form action="http://127.0.0.1:8010/login" method="post">
+
+          <button type="submit" class="login-button">Login</button>
+      </form>
+      Contact us at: iamcalledned@gmail.com
+    </footer>
+    <script>
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', function() {
+            navigator.serviceWorker.register('/service-worker.js').then(function(registration) {
+              // Registration was successful
+              console.log('Service Worker registered with scope: ', registration.scope);
+            }, function(err) {
+              // registration failed :(
+              console.log('Service Worker registration failed: ', err);
+            });
+          });
+        }
+      </script>
+      
+    <script src="script.js"></script>
+</body>
+</html>

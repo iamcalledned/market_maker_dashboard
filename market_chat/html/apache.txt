@@ -1,0 +1,40 @@
+<IfModule mod_ssl.c>
+<VirtualHost *:443>
+    ServerName whattogrill.com
+    ServerAlias www.whattogrill.com
+    ServerAlias api.whattogrill.com
+    ServerAlias chat.whattogrill.com
+    ServerAlias auth.whattogrill.com
+    ServerAdmin webmaster@localhost
+    DocumentRoot /var/www/whattogrill.com
+
+
+
+    ErrorLog ${APACHE_LOG_DIR}/error.log
+    CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+    # SSL Configuration
+    Include /etc/letsencrypt/options-ssl-apache.conf
+
+    # Proxy configuration for Uvicorn app
+    ProxyPreserveHost On
+    ProxyPass /callback http://localhost:8010/callback
+    ProxyPassReverse /callback http://localhost:8010/callback
+
+    ProxyPass /login http://localhost:8010/login
+    ProxyPassReverse /login http://localhost:8010/login
+
+    ProxyPass /get_session_data http://localhost:8010/get_session_data
+    ProxyPassReverse /get_session_data http://localhost:8010/get_session_data
+
+    # Proxy WebSocket traffic
+    ProxyPreserveHost On
+    ProxyPass "/ws" "ws://localhost:8075/ws"
+    ProxyPassReverse "/ws" "ws://localhost:8075/ws"
+
+    SSLCertificateFile /etc/letsencrypt/live/www.whattogrill.com/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/www.whattogrill.com/privkey.pem
+
+Include /etc/letsencrypt/options-ssl-apache.conf
+</VirtualHost>
+</IfModule>

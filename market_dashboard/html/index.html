@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Welcome to iamcalledned.ai</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: #fff;
+      text-align: center;
+      padding-top: 15vh;
+      margin: 0;
+    }
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 0.5rem;
+    }
+    p {
+      font-size: 1.2rem;
+      margin-bottom: 2rem;
+    }
+    .button {
+      padding: 14px 28px;
+      font-size: 1.1rem;
+      background-color: #00b894;
+      color: white;
+      border: none;
+      border-radius: 30px;
+      text-decoration: none;
+      transition: background-color 0.3s ease;
+    }
+    .button:hover {
+      background-color: #01a182;
+    }
+    .coming-soon {
+      margin-top: 4rem;
+      font-size: 0.9rem;
+      opacity: 0.7;
+    }
+    .emoji {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      animation: float 2s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+  </style>
+</head>
+<body>
+  <h1>Welcome to <span style="color:#00cec9;">iamcalledned.ai</span></h1>
+  <p>Curious about the markets? Let’s sniff out the truth.</p>
+  <a class="button" href="/dashboard">🚀 Launch the Market Dashboard</a>
+  <a class="button chat-button" href="/api/login">💬 Chat with Us</a>
+
+  <div class="coming-soon">
+    More AI-powered tools coming soon...
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const button = document.querySelector(".button");
+      const message = document.createElement("p");
+      message.style.marginTop = "1rem";
+      message.style.fontSize = "1rem";
+  
+      function checkServerStatus() {
+        fetch("https://iamcalledned.ai/api/status")
+          .then((response) => {
+            if (response.ok) {
+              button.textContent = "🚀 Launch the Market Dashboard";
+              button.style.backgroundColor = "#00b894";
+              button.style.cursor = "pointer";
+              button.href = "/dashboard";
+              message.textContent = "Dashboard is online!";
+              message.style.color = "#00b894";
+            } else {
+              throw new Error("Server not responding");
+            }
+          })
+          .catch(() => {
+            button.textContent = "🚧 Dashboard Down for Maintenance";
+            button.style.backgroundColor = "#d63031";
+            button.style.cursor = "not-allowed";
+            button.href = "#";
+            message.textContent = "Please check back later.";
+            message.style.color = "#d63031";
+          })
+          .finally(() => {
+            if (!message.parentNode) {
+              button.parentNode.insertBefore(message, button.nextSibling);
+            }
+          });
+      }
+  
+      // Initial check
+      checkServerStatus();
+  
+      // Auto-refresh every 5 seconds
+      setInterval(checkServerStatus, 5000);
+    });
+  </script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const chatButton = document.querySelector(".chat-button");
+      const chatMessage = document.createElement("p");
+      chatMessage.style.marginTop = "1rem";
+      chatMessage.style.fontSize = "1rem";
+
+      function checkChatStatus() {
+        fetch("https://iamcalledned.ai/api/status2")
+          .then((response) => {
+            if (response.ok) {
+              chatButton.textContent = "💬 Chat with Us";
+              chatButton.style.backgroundColor = "#00b894";
+              chatButton.style.cursor = "pointer";
+              chatButton.href = "/api/login";
+              chatMessage.textContent = "Chat is online!";
+              chatMessage.style.color = "#00b894";
+            } else {
+              throw new Error("Chat server not responding");
+            }
+          })
+          .catch(() => {
+            chatButton.textContent = "🚧 Chat Unavailable";
+            chatButton.style.backgroundColor = "#d63031";
+            chatButton.style.cursor = "not-allowed";
+            chatButton.href = "#";
+            chatMessage.textContent = "Please check back later.";
+            chatMessage.style.color = "#d63031";
+          })
+          .finally(() => {
+            if (!chatMessage.parentNode) {
+              chatButton.parentNode.insertBefore(chatMessage, chatButton.nextSibling);
+            }
+          });
+      }
+
+      // Initial check
+      checkChatStatus();
+
+      // Auto-refresh every 5 seconds
+      setInterval(checkChatStatus, 5000);
+    });
+  </script>
+</body>
+</html>

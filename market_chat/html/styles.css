@@ -1,0 +1,179 @@
+/* Reset some default styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Apply a font to everything for consistency */
+body, button {
+    font-family: 'Helvetica Neue', sans-serif;
+}
+
+/* Body Styles */
+body {
+    background-color: var(--b2); /* Match dashboard background */
+    color: var(--bc); /* Match dashboard text color */
+    font-family: 'Inter', sans-serif; /* Match dashboard font */
+    text-align: center; /* Center align the text for the main content */
+}
+
+/* Main Content Styles */
+main {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* This will center the children elements horizontally */
+    justify-content: flex-start; /* This will center the children elements vertically */
+    height: 100vh;
+    text-align: center; /* Centers text for all child elements */
+}
+
+/* Logo Styles */
+.logo img {
+    max-width: 50%;
+    height: auto;
+    margin-bottom: 20px; /* Space below the logo */
+}
+
+/* Chat header styles */
+.chat-header {
+    background-color: var(--b3); /* Match dashboard header background */
+    color: var(--bc); /* Match dashboard header text color */
+    padding: 1rem;
+    border-bottom: 1px solid var(--b1);
+}
+
+/* Hamburger menu styles */
+.hamburger-menu span {
+    background-color: var(--bc); /* Match dashboard text color */
+}
+
+/* Options menu styles */
+.options-menu {
+    background-color: var(--b1); /* Match base color */
+    color: var(--bc); /* Match base text color */
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Menu item styles */
+.menu-item {
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--b2);
+}
+
+.menu-item:hover {
+    background-color: var(--b3); /* Slightly darker base color */
+}
+
+/* Notification bubble styles */
+.notification-bubble {
+    background-color: var(--p); /* Match primary color */
+    color: var(--pc); /* Match primary text color */
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Main Button Style */
+/* Login Button Styles */
+.login-button {
+    /* Button-like styling */
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+/* Hover and focus styles don't need to be inside media queries */
+#login:hover {
+    background-color: #e63900; /* Darker shade on hover */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Increased shadow on hover */
+}
+
+#login:focus {
+    box-shadow: 0 0 0 3px rgba(255, 69, 0, 0.5); /* Orange glow to indicate focus */
+}
+
+/* Headline Styles */
+.headline {
+    margin-top: 4.5em; /* Adds a little space above the headline */
+    font-size: 24px; /* Adjusted for better readability */
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2); /* Text shadow for depth */
+}
+
+/* Footer Styles */
+footer {
+    position: absolute; /* Footer will be positioned at the bottom */
+    bottom: 0;
+    width: 100%;
+    padding: 20px 0;
+    text-align: center;
+    padding-top: 20px;
+}
+
+/* Remove all media queries as they are not necessary for this design */
+
+/* Login Button Styles - as before, but now inside a media query for mobile */
+@media (max-width: 600px) {
+    #login {
+        background-color: #ff4500;
+        color: white;
+        padding: 10px 20px;
+        font-size: 18px;
+        border: none;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        cursor: pointer;
+        outline: none;
+        transition: background-color 0.3s, box-shadow 0.3s;
+        margin-top: 1em;
+    }
+
+    #login:hover {
+        background-color: #e63900;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    #login:focus {
+        box-shadow: 0 0 0 3px rgba(255, 69, 0, 0.5);
+    }
+}
+
+/* Desktop styles for the button */
+@media (min-width: 601px) {
+    #login {
+        padding: 12px 30px; /* Larger padding on desktop */
+        font-size: 20px; /* Larger font size on desktop */
+        /* Add any additional styles you want for the desktop version */
+    }
+    /* You can also adjust the button's position if necessary */
+}
+
+@media (min-width: 601px) {
+    .logo img {
+        /* Reduce the size of the image by 20% */
+        transform: scale(0.8);
+        /* Center the image after scaling if it's not already centered */
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        margin-bottom: 0;
+        margin-top: 20px;
+    }
+}
+
+.logo-text {
+    /* Example styles for the new text block */
+    font-size: 1rem; /* Set the font size */
+    color: white; /* Set the text color */
+    margin-top: 5px; /* Add space above the new text block if needed */
+    padding: 0 20px; /* Add padding for better text readability */
+}

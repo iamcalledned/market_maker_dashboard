@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- SEO related -->
+    <title>Chatbot Frontend</title>
+    <!-- Meta related -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <!-- Vendor CSS & style files -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Josefin+Sans:300|Open+Sans:300|Oxygen|Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" type="text/css" href="static/main.css">
+</head>
+<body>
+    <div class="container">
+        <div class="row padded_row">
+            <!-- Right side content -->
+            <div class="col-md-7">
+                <div class="chat_window">
+                    <div class="top_menu">
+                        <div class="title">ChatBot - Jarvis</div>
+                    </div>
+                    <!-- Dynamically rendered messages -->
+                    <ul class="messages"></ul>
+                    <!-- Typing indicator -->
+                    <div id="typing-container" style="display:none;">Jarvis is typing...</div>
+                    <!-- Input -->
+                    <div class="bottom_wrapper">
+                        <input id="message-input" placeholder="Say Hi to begin chat..." />
+                        <div id="send-button" class="app_button_1">Send</div>
+                    </div>
+                </div>
+            </div>
+            <!-- Left side content -->
+            <div class="col-md-5">
+                <div class="chat_window">
+                    <div class="top_menu">
+                        <div class="title">Help</div>
+                    </div>
+                    <!-- Help container -->
+                    <div class="panel-group" id="accordion">
+                        <!-- Help - 1 -->
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <h4 class="panel-title">
+                                    <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapse1">Lorem ipsum</a>
+                                </h4>
+                            </div>
+                            <div id="collapse1" class="panel-collapse collapse in">
+                                <div class="panel-body">Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Shopping list button (add if needed) -->
+                    <!-- <button id="shopping-list-button">Shopping List</button> -->
+                    <!-- Shopping list overlay (add if needed) -->
+                    <!-- <div id="shopping-list-overlay" class="hidden"></div> -->
+                </div>
+            </div>
+        </div>
+        <!-- Logout button (add if needed) -->
+        <!-- <button id="logout">Logout</button> -->
+    </div>
+    <!-- Vendor script files -->
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <!-- Custom scripts -->
+    <script src="static/main.js"></script>
+</body>
+</html>

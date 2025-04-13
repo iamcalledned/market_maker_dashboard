@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bottom Sniffer Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.0.0/dist/full.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" />
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+  
+    .fade-in {
+      animation: fadeIn 0.8s ease-in-out;
+    }
+  
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  
+    canvas.sparkline {
+      max-height: 60px;
+      width: 100%;
+    }
+  
+    /* ⬇️ Universal tab styling */
+    .tab {
+      background-color: var(--b2); 
+      color: var(--bc); 
+      padding: 0.6rem 1rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: background 0.2s ease-in-out;
+      text-align: center;
+      white-space: nowrap;
+    }
+  
+    .tab-active {
+      background-color: var(--p);
+      color: var(--pc);
+    }
+  
+    /* ⬇️ Responsive tab container */
+    @media (max-width: 640px) {
+      .tabs {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+      }
+  
+      .tab {
+        width: 100%;
+      }
+    }
+  
+    @media (min-width: 641px) {
+      .tabs {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.5rem;
+      }
+  
+      .tab {
+        min-width: 140px;
+      }
+    }
+  </style>
+  
+</head>
+<body class="bg-neutral text-neutral-content" onload="initIndicators()">
+
+  <div class="max-w-7xl mx-auto p-4">
+    <div class="text-center mb-8">
+      <h1 class="text-4xl font-bold">Bottom Sniffer Dashboard</h1>
+      <div class="text-sm text-gray-400 mt-2">Updated: <span id="timestamp">⏳</span></div>
+    </div>
+
+    <div class="text-center mb-12">
+      <h2 class="text-2xl font-semibold mb-2">🔥 Sniff-O-Meter</h2>
+      <div id="sniff-meter" class="text-6xl">⏳</div>
+    </div>
+
+    <div role="tablist" class="flex flex-wrap justify-center gap-2 mb-6">
+      <button class="tab w-full sm:w-auto tab-active bg-base-200 px-4 py-2 rounded text-sm font-medium text-center" onclick="showTab('macro')">📉 Macro</button>
+      <button class="tab w-full sm:w-auto bg-base-200 px-4 py-2 rounded text-sm font-medium text-center" onclick="showTab('stress')">🧨 Market Stress</button>
+      <button class="tab w-full sm:w-auto bg-base-200 px-4 py-2 rounded text-sm font-medium text-center" onclick="showTab('safety')">💰 Flight to Safety</button>
+      <button class="tab w-full sm:w-auto bg-base-200 px-4 py-2 rounded text-sm font-medium text-center" onclick="showTab('methodology')">📘 Methodology</button>
+    </div>
+    
+
+
+
+    <div id="macro" class="tab-pane fade-in">
+      <h3 class="text-xl font-bold mb-4">Macro Crack Monitors</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {% for indicator in config.categories[0].indicators %}
+        <div class="card bg-base-200 shadow-md fade-in">
+          <div class="card-body">
+            <h4 class="card-title text-sm text-base-content">{{ indicator }}</h4>
+            <div id="{{ indicator|replace(' ', '_') }}" class="text-3xl font-bold" data-indicator="{{ indicator }}">
+              <span class="loading loading-dots loading-md"></span>
+            </div>
+            <div onclick="openDetailModal('{{ indicator }}')" style="cursor:pointer;">
+              <canvas class="sparkline mt-2" id="chart-{{ indicator|replace(' ', '_') }}"></canvas>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div id="stress" class="tab-pane hidden fade-in">
+      <h3 class="text-xl font-bold mb-4">Market Stress Indicators</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {% for indicator in config.categories[1].indicators %}
+        <div class="card bg-base-200 shadow-md fade-in">
+          <div class="card-body">
+            <h4 class="card-title text-sm text-base-content">{{ indicator }}</h4>
+            <div id="{{ indicator|replace(' ', '_') }}" class="text-3xl font-bold" data-indicator="{{ indicator }}">
+              <span class="loading loading-dots loading-md"></span>
+            </div>
+            <div onclick="openDetailModal('{{ indicator }}')" style="cursor:pointer;">
+              <canvas class="sparkline mt-2" id="chart-{{ indicator|replace(' ', '_') }}"></canvas>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div id="safety" class="tab-pane hidden fade-in">
+      <h3 class="text-xl font-bold mb-4">Flight to Safety</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {% for indicator in config.categories[2].indicators %}
+        <div class="card bg-base-200 shadow-md fade-in">
+          <div class="card-body">
+            <h4 class="card-title text-sm text-base-content">{{ indicator }}</h4>
+            <div id="{{ indicator|replace(' ', '_') }}" class="text-3xl font-bold" data-indicator="{{ indicator }}">
+              <span class="loading loading-dots loading-md"></span>
+            </div>
+            <div onclick="openDetailModal('{{ indicator }}')" style="cursor:pointer;">
+              <canvas class="sparkline mt-2" id="chart-{{ indicator|replace(' ', '_') }}"></canvas>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div id="methodology" class="tab-pane hidden fade-in">
+      <h3 class="text-xl font-bold mb-4">Market Stress Score: Methodology</h3>
+      <p class="mb-4">
+        Our Composite Market Score is a real-time "sniff test" for the overall risk environment. It condenses multiple indicators into a single number from 0 to 100:
+      </p>
+      <ul class="list-disc list-inside mb-4">
+        <li><strong>0–20:</strong> Ultra Risk-On (euphoria)</li>
+        <li><strong>21–40:</strong> Risk-On (optimism)</li>
+        <li><strong>41–60:</strong> Neutral / Mixed Signals</li>
+        <li><strong>61–80:</strong> Risk-Off (stress rising)</li>
+        <li><strong>81–100:</strong> Crisis (get your helmet)</li>
+      </ul>
+      <h4 class="text-lg font-semibold mb-2">🔍 What Goes Into the Score?</h4>
+      <p class="mb-4">
+        We monitor four major areas of the financial system:
+      </p>
+      <ul class="list-disc list-inside mb-4">
+        <li><strong>Interest Rates & Yield Curves (15%):</strong> We track short and long-term Treasury yields and the shape of the yield curve. Inverted or flat curves are a red flag for recession risk.</li>
+        <li><strong>Credit Risk & Volatility (40%):</strong> We use market indicators like the VIX, MOVE Index, and high-yield credit spreads to assess fear and financial stress.</li>
+        <li><strong>Macro Health (25%):</strong> Economic data like unemployment, inflation, and retail sales help gauge whether the economy is cruising or sputtering.</li>
+        <li><strong>Flight to Safety (20%):</strong> We watch where investors are parking their money — like gold or Bitcoin — to see if they’re bracing for impact.</li>
+      </ul>
+      <p class="mb-4">
+        Each input is normalized to a 0–100 range based on historical stress levels. Then we apply weighted averages to create the final score.
+      </p>
+      <h4 class="text-lg font-semibold mb-2">Want More Details?</h4>
+      <p class="mb-4">
+        If you’re into formulas and data, here’s the math behind it:
+      </p>
+      <pre class="bg-base-200 p-4 rounded-lg text-sm mb-4">
+Composite Score =
+(0.15 × Rates & Curve) +
+(0.40 × Credit & Volatility) +
+(0.25 × Macro Indicators) +
+(0.20 × Safe-Haven Demand)
+      </pre>
+      <p>
+        This dashboard is built to be a real-time market weathervane, not a crystal ball. Use it to stay aware, not to make trades on its own.
+      </p>
+    </div>
+
+    <div class="mt-16 text-center">
+      <h2 class="text-2xl font-semibold mb-4">Market Stress Score</h2>
+      <div id="Stress_Composite_Score" class="text-5xl font-extrabold text-primary animate-pulse" data-indicator="Stress Composite Score">⏳</div>
+      <button onclick="openCompositeDetailModal()" class="btn btn-sm btn-outline mt-4">View Details</button>
+    </div>
+
+    <div id="composite-detail-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50">
+      <div class="bg-base-100 rounded-lg shadow-lg p-6 w-full max-w-3xl relative">
+        <button onclick="closeCompositeDetailModal()" class="absolute top-2 right-2 text-xl font-bold text-gray-300">✕</button>
+        <h3 class="text-xl font-semibold mb-4">Composite Score Details</h3>
+        <div id="composite-details" class="text-sm text-gray-400">Loading...</div>
+        <div id="risk-classification" class="mt-4 text-left">
+          <h4 class="text-lg font-bold">Risk Classification</h4>
+          <p id="risk-label" class="text-xl font-semibold"></p>
+          <p id="risk-description" class="text-sm text-gray-500"></p>
+        </div>
+      </div>
+    </div>
+
+    <div id="detail-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50">
+      <div class="bg-base-100 rounded-lg shadow-lg p-6 w-full max-w-3xl relative">
+        <button onclick="closeDetailModal()" class="absolute top-2 right-2 text-xl font-bold text-gray-300">✕</button>
+        <h3 id="modal-title" class="text-xl font-semibold mb-2">📈 Detail</h3>
+        <p id="modal-summary" class="text-sm text-gray-400 mb-4">Summary here</p>
+        <div style="height: 300px;"><canvas id="modal-chart"></canvas></div>
+      </div>
+    </div>
+
+    <footer class="mt-16 text-center text-sm text-gray-500">
+      Data from FRED, Yahoo Finance, and deeply sniffed by our bots. Built by Ned
+    </footer>
+  </div>
+  <script>
+    const logScaleIndicators = ["Bitcoin", "BTC-USD", "VIX", "Gold", "GC=F", "VVIX"];
+  
+    function showTab(tab) {
+      document.querySelectorAll(".tab-pane").forEach(p => p.classList.add("hidden"));
+      document.getElementById(tab).classList.remove("hidden");
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("tab-active"));
+      document.querySelector(`.tab[onclick="showTab('${tab}')"]`).classList.add("tab-active");
+    }
+  
+    function fetchIndicator(indicatorName, elementId) {
+        // Skip updating the Stress Composite Score in this function
+        if (indicatorName === "Stress Composite Score") return;
+
+        fetch('/api/indicator/' + encodeURIComponent(indicatorName))
+            .then(res => res.json())
+            .then(data => {
+                const el = document.getElementById(elementId);
+                if (!el) return;
+
+                if (data.value !== null && data.value !== undefined) {
+                    const value = data.value.toFixed(2);
+                    let cls = "text-success";
+                    if (data.value < 0) cls = "text-error";
+                    else if (indicatorName.includes("Unemployment") && data.value > 5) cls = "text-error";
+                    else if (indicatorName.includes("CPI") && data.value > 4) cls = "text-error";
+                    else if (data.value === 0) cls = "text-warning";
+
+                    el.innerHTML = `<span class="${cls}">${value}</span>`;
+                } else {
+                    el.innerHTML = '<span class="text-warning">N/A</span>';
+                }
+            });
+    }
+  
+    function initIndicators() {
+        document.querySelectorAll('[data-indicator]').forEach(el => {
+            const name = el.getAttribute('data-indicator');
+            fetchIndicator(name, el.id);
+
+            // Fetch historical data for sparklines
+            const canvasId = `chart-${name.replace(/ /g, '_')}`;
+            fetch(`/api/history/${encodeURIComponent(name)}`)
+                .then(res => res.json())
+                .then(data => {
+                    const values = data.values.map(v => v.value); // Extract values from history
+                    console.log(`[DEBUG] Sparkline data for ${name}:`, values); // Debug log
+                    drawSparkline(canvasId, values); // Draw the sparkline
+                })
+                .catch(err => {
+                    console.error(`[DEBUG] Error fetching sparkline data for ${name}:`, err);
+                });
+        });
+
+        const ts = document.getElementById("timestamp");
+        if (ts) ts.innerText = new Date().toLocaleString();
+    }
+  
+    function drawSparkline(canvasId, values) {
+        const ctx = document.getElementById(canvasId);
+        if (!ctx) {
+            console.error(`[DEBUG] Canvas with ID ${canvasId} not found.`);
+            return;
+        }
+
+        if (!values || values.length === 0) {
+            console.error(`[DEBUG] No data provided for canvas ID ${canvasId}.`);
+            return;
+        }
+
+        console.log(`[DEBUG] Drawing sparkline for ${canvasId} with values:`, values);
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: values.map((_, i) => i),
+                datasets: [{
+                    data: values,
+                    borderColor: "#7dd3fc",
+                    tension: 0.4, // Smooth the line
+                    borderWidth: 2, // Ensure line is visible
+                    fill: false, // Disable area fill
+                    pointRadius: 0 // Hide points
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: { 
+                    x: { display: false }, 
+                    y: { display: false } 
+                },
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    }
+  
+    function updateSniffMeter(score) {
+      const el = document.getElementById("sniff-meter");
+      if (!el) return;
+      const riskLevel = score > 80 ? "🚨 Crisis / Extreme Risk-Off"
+                      : score > 60 ? "⚠️ Risk-Off"
+                      : score > 40 ? "😐 Neutral / Caution"
+                      : score > 20 ? "😎 Risk-On"
+                      : "🌟 Ultra Risk-On";
+      el.innerText = riskLevel;
+    }
+
+    function fetchCompositeScore() {
+        fetch("/api/composite_score")
+            .then(res => res.json())
+            .then(data => {
+                console.log("[DEBUG] API Response:", data);  // Log the API response
+                if (data.composite_score !== undefined) {
+                    // Update Sniff-O-Meter
+                    updateSniffMeter(data.composite_score);
+
+                    // Update Meta Stress Score
+                    const metaStressScoreEl = document.getElementById("Stress_Composite_Score");
+                    if (metaStressScoreEl) {
+                        metaStressScoreEl.innerText = data.composite_score.toFixed(2); // Use the same value
+                    }
+                } else {
+                    console.error("[DEBUG] Composite score is undefined in API response.");
+                    const metaStressScoreEl = document.getElementById("Stress_Composite_Score");
+                    if (metaStressScoreEl) {
+                        metaStressScoreEl.innerText = "N/A";
+                    }
+                }
+            })
+            .catch(err => {
+                console.error("[DEBUG] Error fetching composite score:", err);
+                const metaStressScoreEl = document.getElementById("Stress_Composite_Score");
+                if (metaStressScoreEl) {
+                    metaStressScoreEl.innerText = "N/A";
+                }
+            });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        fetchCompositeScore(); // Ensure Sniff-O-Meter and Meta Stress Score are updated on page load
+    });
+
+    function openCompositeDetailModal() {
+      const modal = document.getElementById("composite-detail-modal");
+      const details = document.getElementById("composite-details");
+      const riskLabel = document.getElementById("risk-label");
+      const riskDescription = document.getElementById("risk-description");
+      details.innerText = "Loading...";
+      riskLabel.innerText = "";
+      riskDescription.innerText = "";
+      modal.classList.remove("hidden");
+      fetch("/api/composite_score")
+        .then(res => res.json())
+        .then(data => {
+          if (data.details) {
+            details.innerHTML = `
+              <ul>
+                <li><strong>Rates & Curve:</strong> ${data.details.rates_and_curve}</li>
+                <li><strong>Credit & Volatility:</strong> ${data.details.credit_and_volatility}</li>
+                <li><strong>Macro Indicators:</strong> ${data.details.macro_indicators}</li>
+                <li><strong>Flight to Safety:</strong> ${data.details.flight_to_safety}</li>
+              </ul>`;
+          } else {
+            details.innerText = "No details available.";
+          }
+          if (data.risk_classification) {
+            riskLabel.innerText = data.risk_classification.label;
+            riskDescription.innerText = data.risk_classification.description;
+          }
+        })
+        .catch(err => {
+          details.innerText = "Error fetching details.";
+          console.error("Error fetching composite score details:", err);
+        });
+    }
+
+    function closeCompositeDetailModal() {
+      const modal = document.getElementById("composite-detail-modal");
+      modal.classList.add("hidden");
+    }
+
+    function openDetailModal(indicatorName) {
+      const modal = document.getElementById("detail-modal");
+      const title = document.getElementById("modal-title");
+      const summary = document.getElementById("modal-summary");
+      const chartCanvas = document.getElementById("modal-chart");
+  
+      title.innerText = `📈 ${indicatorName}`;
+      summary.innerText = "Loading...";
+      modal.classList.remove("hidden");
+      fetch(`/api/history/${encodeURIComponent(indicatorName)}`)
+        .then(res => res.json())
+        .then(data => {
+          const values = data.values || [];
+          const start = values[0]?.value;
+          const end = values[values.length - 1]?.value;
+          const pct = start && end ? (((end - start) / start) * 100).toFixed(2) : null;
+          const ctx = chartCanvas.getContext("2d");
+          summary.innerText = pct ? `7-day change: ${pct}%` : "No data available";
+  
+          const logScale = logScaleIndicators.some(id => indicatorName.includes(id));
+          if (chartCanvas.chart) chartCanvas.chart.destroy();
+          chartCanvas.chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: values.map(v => v.date),
+              datasets: [{
+                label: indicatorName,
+                data: values.map(v => v.value),
+                borderColor: "#00cec9",
+                backgroundColor: "rgba(0,206,201,0.2)",
+                fill: true,
+                tension: 0.4,
+                pointRadius: 2,
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: true,
+              aspectRatio: 2,
+              interaction: { mode: 'index', intersect: false },
+              scales: {
+                x: {
+                  ticks: { maxTicksLimit: 7 }
+                },
+                y: {
+                  type: logScale ? 'logarithmic' : 'linear',
+                  beginAtZero: false,
+                  title: { display: true, text: "Value" },
+                  ticks: {
+                    callback: val => logScale ? Number(val).toLocaleString() : val
+                  }
+                }
+              },
+              plugins: {
+                legend: { display: false },
+                zoom: {
+                  pan: { enabled: true, mode: 'xy' },
+                  zoom: {
+                    wheel: { enabled: true },
+                    pinch: { enabled: true },
+                    mode: 'xy'
+                  }
+                }
+              }
+            }
+          });
+        });
+    }
+
+    function closeDetailModal() {
+      const modal = document.getElementById("detail-modal");
+      modal.classList.add("hidden");
+      const canvas = document.getElementById("modal-chart");
+      if (canvas && canvas.chart) {
+        canvas.chart.destroy();
+        canvas.chart = null;
+      }
+    }
+  </script>
+  </body>
+</html>
+``` 
