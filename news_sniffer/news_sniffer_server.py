@@ -1,4 +1,5 @@
-from flask import request, jsonify
+from flask import Flask, request, jsonify
+
 from apscheduler.schedulers.background import BackgroundScheduler
 from fetcher import fetch_all_google_topics, fetch_zerohedge_rss
 from database import init_db, insert_articles, get_latest_articles
