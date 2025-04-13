@@ -10,16 +10,16 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''
-        CREATE TABLE IF NOT EXISTS articles (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            headline TEXT,
-            url TEXT UNIQUE,
-            source TEXT,
-            snippet TEXT,
-            timestamp TEXT,
-            score INTEGER DEFAULT 0,
-            bot_response TEXT,
-            retrieved_at TEXT DEFAULT CURRENT_TIMESTAMP
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        headline TEXT,
+        url VARCHAR(1000) UNIQUE,
+        source VARCHAR(255),
+        snippet TEXT,
+        full_text LONGTEXT,
+        timestamp DATETIME,
+        score INT DEFAULT 0,
+        bot_response TEXT,
+        retrieved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
     conn.commit()

@@ -14,15 +14,16 @@ def init_db():
     c = conn.cursor()
     c.execute('''
         CREATE TABLE IF NOT EXISTS articles (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id INT AUTO_INCREMENT PRIMARY KEY,
             headline TEXT,
-            url TEXT UNIQUE,
-            source TEXT,
+            url VARCHAR(1000) UNIQUE,
+            source VARCHAR(255),
             snippet TEXT,
-            timestamp TEXT,
-            score INTEGER DEFAULT 0,
+            full_text LONGTEXT,
+            timestamp DATETIME,
+            score INT DEFAULT 0,
             bot_response TEXT,
-            retrieved_at TEXT DEFAULT CURRENT_TIMESTAMP
+            retrieved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
     conn.commit()
@@ -35,14 +36,18 @@ def insert_articles(articles):
     for article in articles:
         try:
             c.execute('''
-                INSERT OR IGNORE INTO articles (headline, url, source, snippet, timestamp)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT IGNORE INTO articles
+                (headline, url, source, snippet, full_text, timestamp, score, bot_response)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             ''', (
                 article.get("headline"),
                 article.get("url"),
                 article.get("source"),
                 article.get("snippet"),
-                article.get("timestamp") or datetime.utcnow().isoformat()
+                article.get("full_text"),
+                article.get("timestamp"),
+                article.get("score", 0),
+                article.get("bot_response")
             ))
             count += c.rowcount
         except Exception as e:
