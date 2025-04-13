@@ -35,6 +35,11 @@ def api_get_news():
     latest = get_latest_articles(limit=20)
     return jsonify(latest)
 
+@app.route("/api/scan", methods=["POST"])
+def run_manual_scan():
+    scheduled_news_scan()
+    return jsonify({"status": "Scan triggered"})
+
 if __name__ == "__main__":
     scheduled_news_scan()  # Run immediately at startup
     app.run(host="0.0.0.0", port=5001)
