@@ -5,7 +5,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DB_PATH = os.getenv("SNIFFER_DB_PATH")
+SNIFFER_DB_PATH = os.getenv("SNIFFER_DB_PATH")
+DB_PATH = SNIFFER_DB_PATH
 
 def init_db():
     if not os.path.exists(DB_PATH):
