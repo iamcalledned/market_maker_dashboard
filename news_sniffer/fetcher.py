@@ -3,6 +3,8 @@ import requests
 import feedparser
 from dotenv import load_dotenv
 from datetime import datetime
+from fetcher import fetch_all_google_topics, fetch_zerohedge_rss
+
 NEWS_QUERIES = {
     "Yield Curve / Rates": "yield curve inversion OR 2s10s spread",
     "Credit Stress": "high yield spreads OR credit risk OR bond market stress",
@@ -47,7 +49,7 @@ def fetch_all_google_topics():
     for category, query in NEWS_QUERIES.items():
         try:
             print(f"[Fetcher] Querying category: {category}")
-            articles = fetch_google_results(query, num_results=3)
+            articles = fetch_all_google_topics() + fetch_zerohedge_rss()
             all_articles.extend(articles)
         except Exception as e:
             print(f"[Fetcher] Error fetching results for '{category}': {e}")
@@ -68,3 +70,6 @@ def fetch_zerohedge_rss():
         })
 
     return results
+
+
+
