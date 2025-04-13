@@ -58,11 +58,11 @@ def add_url():
 
     try:
         if "archive.md" in url:
-            html = fetch_full_text_with_playwright(url)
-            full_text = extract_text_from_html(html)
+            full_text = fetch_full_text_from_archive_md(url)
             headline = full_text.split("\n")[0][:140] if full_text else "Untitled"
             snippet = full_text[:500]
             source = "https://archive.md"
+
         else:
             article = Article(url)
             article.download()
