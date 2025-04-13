@@ -3,7 +3,11 @@ import requests
 import feedparser
 from dotenv import load_dotenv
 from datetime import datetime
-from fetcher import fetch_all_google_topics, fetch_zerohedge_rss
+
+load_dotenv()
+
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+GOOGLE_CSE_ID = os.getenv("GOOGLE_CSE_ID")
 
 NEWS_QUERIES = {
     "Yield Curve / Rates": "yield curve inversion OR 2s10s spread",
@@ -14,11 +18,6 @@ NEWS_QUERIES = {
     "Fed / Policy Shift": "Powell speech OR FOMC minutes OR rate cut odds",
     "Trade / China": "Trump tariffs OR China retaliation OR supply chain risks"
 }
-
-load_dotenv()
-
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-GOOGLE_CSE_ID = os.getenv("GOOGLE_CSE_ID")
 
 def fetch_google_results(query, num_results=3):
     url = "https://www.googleapis.com/customsearch/v1"
@@ -49,7 +48,7 @@ def fetch_all_google_topics():
     for category, query in NEWS_QUERIES.items():
         try:
             print(f"[Fetcher] Querying category: {category}")
-            articles = fetch_all_google_topics() + fetch_zerohedge_rss()
+            articles = fetch_google_results(query, num_results=3)
             all_articles.extend(articles)
         except Exception as e:
             print(f"[Fetcher] Error fetching results for '{category}': {e}")
@@ -70,6 +69,3 @@ def fetch_zerohedge_rss():
         })
 
     return results
-
-
-

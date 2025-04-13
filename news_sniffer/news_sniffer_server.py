@@ -1,16 +1,14 @@
 from flask import Flask, jsonify
 from apscheduler.schedulers.background import BackgroundScheduler
-from fetcher import fetch_google_results
+from fetcher import fetch_all_google_topics, fetch_zerohedge_rss
 from database import init_db, insert_articles, get_latest_articles
 import os
 from dotenv import load_dotenv
 
+load_dotenv()
 
 SNIFFER_DB_PATH = os.getenv("SNIFFER_DB_PATH")
 DB_PATH = SNIFFER_DB_PATH
-
-
-load_dotenv()
 
 app = Flask(__name__)
 
@@ -21,7 +19,7 @@ init_db()
 def scheduled_news_scan():
     print("[NewsSniffer] Running scheduled scan...")
     try:
-        articles = fetch_google_results("macroeconomic OR inflation OR credit OR liquidity OR systemic risk", num_results=20)
+        articles = fetch_all_google_topics() + fetch_zerohedge_rss()
         insert_articles(articles)
         print(f"[NewsSniffer] Inserted {len(articles)} articles.")
     except Exception as e:
