@@ -36,9 +36,9 @@ def insert_articles(articles):
     for article in articles:
         try:
             c.execute('''
-                INSERT IGNORE INTO articles
+                INSERT OR IGNORE INTO articles
                 (headline, url, source, snippet, full_text, timestamp, score, bot_response)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 article.get("headline"),
                 article.get("url"),
