@@ -501,9 +501,15 @@ Composite Score =
       const end = values[values.length - 1]?.value;
       const pct = start && end ? (((end - start) / start) * 100).toFixed(2) : null;
 
-      document.getElementById("modal-summary").innerText = pct !== null
+        document.getElementById("modal-summary").innerText = pct !== null
         ? `7-day change: ${pct}%`
         : "";
+
+      // 💥 Force repaint to kill phantom "Loading..."
+      const forceRedraw = document.getElementById("modal-summary");
+      forceRedraw.style.display = 'none';
+      void forceRedraw.offsetHeight;
+      forceRedraw.style.display = '';
 
       const ctx = document.getElementById("atomic-chart").getContext("2d");
       new Chart(ctx, {
