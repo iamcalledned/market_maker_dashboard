@@ -459,81 +459,78 @@ function drawSparkline(canvasId, values) {
   modal.classList.remove("hidden");
 
   // Wait for canvas to become visible before drawing chart
-  setTimeout(() => {
-    fetch(`/api/history/${encodeURIComponent(indicatorName)}`)
-      .then(res => {
-        if (!res.ok) {
-          throw new Error(`Failed to fetch data for ${indicatorName}: ${res.statusText}`);
-        }
-        return res.json();
-      })
-      .then(data => {
-        const values = data.values || [];
-        const start = values[0]?.value;
-        const end = values[values.length - 1]?.value;
-        const pct = start && end ? (((end - start) / start) * 100).toFixed(2) : null;
+  modal.classList.remove("hidden");
 
-        summary.innerText = pct ? `7-day change: ${pct}%` : "No data available";
+requestAnimationFrame(() => {
+  const ctx = chartCanvas.getContext("2d");
+  if (!ctx) {
+    console.error(`[DEBUG] Still couldn't get 2D context.`);
+    return;
+  }
 
-        const ctx = chartCanvas.getContext("2d");
-        if (!ctx) {
-          console.error(`[DEBUG] Could not get 2D context for modal-chart`);
-          return;
-        }
+  fetch(`/api/history/${encodeURIComponent(indicatorName)}`)
+    .then(res => res.json())
+    .then(data => {
+      const values = data.values || [];
+      const start = values[0]?.value;
+      const end = values[values.length - 1]?.value;
+      const pct = start && end ? (((end - start) / start) * 100).toFixed(2) : null;
 
-        const logScale = logScaleIndicators.some(id => indicatorName.includes(id));
+      summary.innerText = pct ? `7-day change: ${pct}%` : "No data available";
 
-        if (chartCanvas.chart) chartCanvas.chart.destroy();
+      const logScale = logScaleIndicators.some(id => indicatorName.includes(id));
+      if (chartCanvas.chart) chartCanvas.chart.destroy();
 
-        chartCanvas.chart = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: values.map(v => v.date),
-            datasets: [{
-              label: indicatorName,
-              data: values.map(v => v.value),
-              borderColor: "#00cec9",
-              backgroundColor: "rgba(0,206,201,0.2)",
-              fill: true,
-              tension: 0.4,
-              pointRadius: 2,
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            aspectRatio: 2,
-            interaction: { mode: 'index', intersect: false },
-            scales: {
-              x: { ticks: { maxTicksLimit: 7 } },
-              y: {
-                type: logScale ? 'logarithmic' : 'linear',
-                beginAtZero: false,
-                title: { display: true, text: "Value" },
-                ticks: {
-                  callback: val => logScale ? Number(val).toLocaleString() : val
-                }
+      chartCanvas.chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: values.map(v => v.date),
+          datasets: [{
+            label: indicatorName,
+            data: values.map(v => v.value),
+            borderColor: "#00cec9",
+            backgroundColor: "rgba(0,206,201,0.2)",
+            fill: true,
+            tension: 0.4,
+            pointRadius: 2,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          aspectRatio: 2,
+          interaction: { mode: 'index', intersect: false },
+          scales: {
+            x: { ticks: { maxTicksLimit: 7 } },
+            y: {
+              type: logScale ? 'logarithmic' : 'linear',
+              beginAtZero: false,
+              title: { display: true, text: "Value" },
+              ticks: {
+                callback: val => logScale ? Number(val).toLocaleString() : val
               }
-            },
-            plugins: {
-              legend: { display: false },
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            zoom: {
+              pan: { enabled: true, mode: 'xy' },
               zoom: {
-                pan: { enabled: true, mode: 'xy' },
-                zoom: {
-                  wheel: { enabled: true },
-                  pinch: { enabled: true },
-                  mode: 'xy'
-                }
+                wheel: { enabled: true },
+                pinch: { enabled: true },
+                mode: 'xy'
               }
             }
           }
-        });
-      })
-      .catch(err => {
-        console.error(`[DEBUG] Error in openDetailModal for ${indicatorName}:`, err);
-        summary.innerText = "Error loading data.";
+        }
       });
-  }, 50);
+    })
+    .catch(err => {
+      console.error(`[DEBUG] Error in openDetailModal for ${indicatorName}:`, err);
+      summary.innerText = "Error loading data.";
+    });
+});
+
 }
 
 
