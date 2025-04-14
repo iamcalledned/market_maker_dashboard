@@ -467,6 +467,9 @@ Composite Score =
       title.innerText = `📈 ${indicatorName}`;
       summary.innerText = "Loading...";
       modal.classList.remove("hidden");
+      modal.style.display = "flex";
+      modal.style.opacity = "1";
+      modal.style.zIndex = "9999";
 
       // Fetch historical data for the chart
       fetch(`/api/history/${encodeURIComponent(indicatorName)}`)
@@ -486,6 +489,8 @@ Composite Score =
           summary.innerText = pct ? `7-day change: ${pct}%` : "No data available";
 
           // Render chart
+          chartCanvas.style.width = "600px";
+          chartCanvas.style.height = "300px";
           const ctx = chartCanvas.getContext("2d");
           const logScale = logScaleIndicators.some(id => indicatorName.includes(id));
 
