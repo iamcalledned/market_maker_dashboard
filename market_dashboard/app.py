@@ -55,7 +55,7 @@ INDICATOR_SOURCES = {
     "Gold": ("yahoo", "GC=F"),
     "Bitcoin": ("yahoo", "BTC-USD"),
     "USD Index": ("yahoo", "DX-Y.NYB"),
-    "Treasury Demand (Bid/Cover)": ("mock", "bidcover"),
+    "Treasury Demand": ("mock", "bidcover"),
     "Stress Composite Score": ("mock_composite", ["DGS2", "DGS10", "DGS30", "FEDFUNDS", "UNRATE"])
 }
 
