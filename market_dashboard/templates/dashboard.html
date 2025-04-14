@@ -324,43 +324,36 @@ Composite Score =
     }
   
     function drawSparkline(canvasId, values) {
-        const ctx = document.getElementById(canvasId);
-        if (!ctx) {
-            console.error(`[DEBUG] Canvas with ID ${canvasId} not found.`);
-            return;
-        }
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+    if (!values || values.length === 0) return;
 
-        if (!values || values.length === 0) {
-            console.error(`[DEBUG] No data provided for canvas ID ${canvasId}.`);
-            return;
-        }
-
-        console.log(`[DEBUG] Drawing sparkline for ${canvasId} with values:`, values);
-
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: values.map((_, i) => i),
-                datasets: [{
-                    data: values,
-                    borderColor: "#7dd3fc",
-                    tension: 0.4, // Smooth the line
-                    borderWidth: 2, // Ensure line is visible
-                    fill: false, // Disable area fill
-                    pointRadius: 0 // Hide points
-                }]
+    // Assign chart instance to canvas
+    ctx.chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: values.map((_, i) => i),
+            datasets: [{
+                data: values,
+                borderColor: "#7dd3fc",
+                tension: 0.4,
+                borderWidth: 2,
+                fill: false,
+                pointRadius: 0
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { display: false },
+                y: { display: false }
             },
-            options: {
-                plugins: { legend: { display: false } },
-                scales: { 
-                    x: { display: false }, 
-                    y: { display: false } 
-                },
-                responsive: true,
-                maintainAspectRatio: false
-            }
-        });
-    }
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+}
+
   
     function updateSniffMeter(score) {
       const el = document.getElementById("sniff-meter");
