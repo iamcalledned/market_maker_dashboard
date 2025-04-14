@@ -252,16 +252,29 @@ Composite Score =
   <script>
     const logScaleIndicators = ["Bitcoin", "BTC-USD", "VIX", "Gold", "GC=F", "VVIX"];
   
-        function showTab(tab) {
+    function showTab(tab) {
+      // Hide all tab panes
       document.querySelectorAll(".tab-pane").forEach(p => p.classList.add("hidden"));
+
+      // Show the selected tab pane
       document.getElementById(tab).classList.remove("hidden");
+
+      // Update tab active state
       document.querySelectorAll(".tab").forEach(t => t.classList.remove("tab-active"));
       document.querySelector(`.tab[onclick="showTab('${tab}')"]`).classList.add("tab-active");
 
-
+      // Ensure the modal is hidden when switching tabs
+      const modal = document.getElementById("detail-modal");
+      if (modal) {
+        modal.classList.add("hidden");
+        const canvas = document.getElementById("modal-chart");
+        if (canvas && canvas.chart) {
+          canvas.chart.destroy();
+          canvas.chart = null;
+        }
+      }
     }
 
-  
     function fetchIndicator(indicatorName, elementId) {
         // Skip updating the Stress Composite Score in this function
         if (indicatorName === "Stress Composite Score") return;
@@ -596,3 +609,4 @@ function loadSnifferArticles() {
     
 </body>
 </html>
+``` 
