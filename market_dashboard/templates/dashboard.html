@@ -256,19 +256,32 @@ Composite Score =
   
     function openDetailModal(indicatorName) {
   const modal = document.getElementById("detail-modal");
-  modal.classList.remove("hidden");
-  modal.style.display = "flex"; // ← forces modal to appear
-  const title = document.getElementById("modal-title");
-  const summary = document.getElementById("modal-summary");
-  const chartCanvas = document.getElementById("modal-chart");
+modal.classList.remove("hidden");
+modal.style.display = "flex";
 
-  console.log("[MODAL] Launching for:", indicatorName);
+// Wait for the modal to visibly render before building the chart
+setTimeout(() => {
+  const ctx = chartCanvas.getContext("2d");
+  if (!ctx) return;
 
-  title.innerText = `📈 ${indicatorName}`;
-  summary.innerText = "Loading...";
-  modal.classList.remove("hidden");
-  modal.style.display = "flex";  // <-- add this
-  void modal.offsetHeight;
+  chartCanvas.chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ['A', 'B', 'C'],
+      datasets: [{
+        label: indicatorName,
+        data: [1, 2, 3],
+        borderColor: 'blue',
+        fill: true
+      }]
+    },
+    options: {
+      responsive: false,
+      maintainAspectRatio: false
+    }
+  });
+}, 100);  // Delay lets canvas layout stabilize
+
 
   setTimeout(() => {
     const ctx = chartCanvas.getContext("2d");
