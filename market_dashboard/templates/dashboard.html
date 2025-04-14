@@ -108,9 +108,9 @@
             <div id="{{ indicator|replace(' ', '_') }}" class="text-3xl font-bold" data-indicator="{{ indicator }}">
               <span class="loading loading-dots loading-md"></span>
             </div>
-            <div onclick="openDetailModal('{{ indicator }}')" style="cursor:pointer;">
-              <canvas class="sparkline mt-2" id="chart-{{ indicator|replace(' ', '_') }}"></canvas>
-            </div>
+            <canvas class="sparkline mt-2 cursor-pointer"
+            id="chart-{{ indicator|replace(' ', '_') }}"
+            onclick="openDetailModal('{{ indicator }}')"></canvas>
           </div>
         </div>
         {% endfor %}
@@ -127,9 +127,9 @@
             <div id="{{ indicator|replace(' ', '_') }}" class="text-3xl font-bold" data-indicator="{{ indicator }}">
               <span class="loading loading-dots loading-md"></span>
             </div>
-            <div onclick="openDetailModal('{{ indicator }}')" style="cursor:pointer;">
-              <canvas class="sparkline mt-2" id="chart-{{ indicator|replace(' ', '_') }}"></canvas>
-            </div>
+            <canvas class="sparkline mt-2 cursor-pointer"
+            id="chart-{{ indicator|replace(' ', '_') }}"
+            onclick="openDetailModal('{{ indicator }}')"></canvas>
           </div>
         </div>
         {% endfor %}
@@ -146,9 +146,9 @@
             <div id="{{ indicator|replace(' ', '_') }}" class="text-3xl font-bold" data-indicator="{{ indicator }}">
               <span class="loading loading-dots loading-md"></span>
             </div>
-            <div onclick="openDetailModal('{{ indicator }}')" style="cursor:pointer;">
-              <canvas class="sparkline mt-2" id="chart-{{ indicator|replace(' ', '_') }}"></canvas>
-            </div>
+            <canvas class="sparkline mt-2 cursor-pointer"
+            id="chart-{{ indicator|replace(' ', '_') }}"
+            onclick="openDetailModal('{{ indicator }}')"></canvas>
           </div>
         </div>
         {% endfor %}
@@ -318,9 +318,6 @@ Composite Score =
 
         // 🛠️ Attach click listener to canvas
         const chartCanvas = document.getElementById(canvasId);
-        if (chartCanvas) {
-            chartCanvas.addEventListener("click", () => openDetailModal(name));
-        }
     });
 
     const ts = document.getElementById("timestamp");
