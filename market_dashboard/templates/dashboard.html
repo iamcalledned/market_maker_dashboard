@@ -256,6 +256,8 @@ Composite Score =
   
     function openDetailModal(indicatorName) {
   const modal = document.getElementById("detail-modal");
+  modal.classList.remove("hidden");
+  modal.style.display = "flex"; // ← forces modal to appear
   const title = document.getElementById("modal-title");
   const summary = document.getElementById("modal-summary");
   const chartCanvas = document.getElementById("modal-chart");
