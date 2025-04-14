@@ -501,9 +501,9 @@ Composite Score =
       const end = values[values.length - 1]?.value;
       const pct = start && end ? (((end - start) / start) * 100).toFixed(2) : null;
 
-      document.getElementById("modal-summary").innerText = pct
+      document.getElementById("modal-summary").innerText = pct !== null
         ? `7-day change: ${pct}%`
-        : "No data available";
+        : "";
 
       const ctx = document.getElementById("atomic-chart").getContext("2d");
       new Chart(ctx, {
