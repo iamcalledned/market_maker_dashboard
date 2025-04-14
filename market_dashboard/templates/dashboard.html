@@ -241,7 +241,9 @@ Composite Score =
         <button onclick="closeDetailModal()" class="absolute top-2 right-2 text-xl font-bold text-gray-300">✕</button>
         <h3 id="modal-title" class="text-xl font-semibold mb-2">📈 Detail</h3>
         <p id="modal-summary" class="text-sm text-gray-400 mb-4">Summary here</p>
-        <div style="height: 300px;"><canvas id="modal-chart"></canvas></div>
+        <div style="height: 300px; width: 100%;">
+          <canvas id="modal-chart" width="600" height="300" style="width:100%; height:100%;"></canvas>
+        </div>
       </div>
     </div>
 
