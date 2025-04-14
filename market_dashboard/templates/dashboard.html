@@ -108,9 +108,9 @@
             <div id="{{ indicator|replace(' ', '_') }}" class="text-3xl font-bold" data-indicator="{{ indicator }}">
               <span class="loading loading-dots loading-md"></span>
             </div>
-            <canvas class="sparkline mt-2 cursor-pointer"
-            id="chart-{{ indicator|replace(' ', '_') }}"
-            onclick="openDetailModal('{{ indicator }}')"></canvas>
+            <div onclick="openDetailModal('{{ indicator }}')" style="cursor:pointer;">
+              <canvas class="sparkline mt-2" id="chart-{{ indicator|replace(' ', '_') }}"></canvas>
+            </div>
           </div>
         </div>
         {% endfor %}
@@ -127,9 +127,9 @@
             <div id="{{ indicator|replace(' ', '_') }}" class="text-3xl font-bold" data-indicator="{{ indicator }}">
               <span class="loading loading-dots loading-md"></span>
             </div>
-            <canvas class="sparkline mt-2 cursor-pointer"
-            id="chart-{{ indicator|replace(' ', '_') }}"
-            onclick="openDetailModal('{{ indicator }}')"></canvas>
+            <div onclick="openDetailModal('{{ indicator }}')" style="cursor:pointer;">
+              <canvas class="sparkline mt-2" id="chart-{{ indicator|replace(' ', '_') }}"></canvas>
+            </div>
           </div>
         </div>
         {% endfor %}
@@ -146,9 +146,9 @@
             <div id="{{ indicator|replace(' ', '_') }}" class="text-3xl font-bold" data-indicator="{{ indicator }}">
               <span class="loading loading-dots loading-md"></span>
             </div>
-            <canvas class="sparkline mt-2 cursor-pointer"
-            id="chart-{{ indicator|replace(' ', '_') }}"
-            onclick="openDetailModal('{{ indicator }}')"></canvas>
+            <div onclick="openDetailModal('{{ indicator }}')" style="cursor:pointer;">
+              <canvas class="sparkline mt-2" id="chart-{{ indicator|replace(' ', '_') }}"></canvas>
+            </div>
           </div>
         </div>
         {% endfor %}
@@ -236,13 +236,23 @@ Composite Score =
       </div>
     </div>
 
-    <div id="detail-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50">
-      <div class="bg-base-100 rounded-lg shadow-lg p-6 w-full max-w-3xl relative">
-        <button onclick="closeDetailModal()" class="absolute top-2 right-2 text-xl font-bold text-gray-300">✕</button>
-        <h3 id="modal-title" class="text-xl font-semibold mb-2">📈 Detail</h3>
-        <p id="modal-summary" class="text-sm text-gray-400 mb-4">Summary here</p>
-        <div style="height: 300px;"><canvas id="modal-chart"></canvas></div>
-      </div>
+    
+<div id="detail-modal" style="
+  position: fixed;
+  inset: 0;
+  display: none;
+  background: rgba(0,0,0,0.7);
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;">
+  <div style="background: white; padding: 2rem; border-radius: 10px; max-width: 700px; width: 100%; text-align: center;">
+    <button onclick="closeDetailModal()" style="position: absolute; top: 10px; right: 20px;">✕</button>
+    <h3 id="modal-title">📈 Detail</h3>
+    <p id="modal-summary">Summary here</p>
+    <canvas id="modal-chart" width="600" height="300" style="display:block;margin:0 auto;"></canvas>
+  </div>
+</div>
+
     </div>
 
     <footer class="mt-16 text-center text-sm text-gray-500">
@@ -252,101 +262,6 @@ Composite Score =
   <script>
     const logScaleIndicators = ["Bitcoin", "BTC-USD", "VIX", "Gold", "GC=F", "VVIX"];
   
-  
-function openDetailModal(indicatorName) {
-  const modal = document.getElementById("detail-modal");
-  const title = document.getElementById("modal-title");
-  const summary = document.getElementById("modal-summary");
-  const chartCanvas = document.getElementById("modal-chart");
-
-  console.log("[MODAL] Launching for:", indicatorName);
-
-  title.innerText = `📈 ${indicatorName}`;
-  summary.innerText = "Loading...";
-  modal.classList.remove("hidden");
-  modal.style.display = "flex";
-
-  Object.assign(modal.style, {
-    position: "fixed",
-    inset: "0",
-    backgroundColor: "rgba(0,0,0,0.7)",
-    zIndex: "99999",
-    opacity: "1",
-    visibility: "visible",
-  });
-
-  setTimeout(() => {
-    const ctx = chartCanvas.getContext("2d");
-    if (!ctx) {
-      console.error("[FATAL] Cannot get canvas context even after reflow.");
-      return;
-    }
-
-    fetch(`/api/history/${encodeURIComponent(indicatorName)}`)
-      .then(res => res.json())
-      .then(data => {
-        const values = data.values || [];
-        const start = values[0]?.value;
-        const end = values[values.length - 1]?.value;
-        const pct = start && end ? (((end - start) / start) * 100).toFixed(2) : null;
-
-        summary.innerText = pct ? `7-day change: ${pct}%` : "No data available";
-
-        const logScale = logScaleIndicators.some(id => indicatorName.includes(id));
-
-        if (chartCanvas.chart) chartCanvas.chart.destroy();
-
-        chartCanvas.chart = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: values.map(v => v.date),
-            datasets: [{
-              label: indicatorName,
-              data: values.map(v => v.value),
-              borderColor: "#00cec9",
-              backgroundColor: "rgba(0,206,201,0.2)",
-              fill: true,
-              tension: 0.4,
-              pointRadius: 2,
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            aspectRatio: 2,
-            interaction: { mode: 'index', intersect: false },
-            scales: {
-              x: { ticks: { maxTicksLimit: 7 } },
-              y: {
-                type: logScale ? 'logarithmic' : 'linear',
-                beginAtZero: false,
-                title: { display: true, text: "Value" },
-                ticks: {
-                  callback: val => logScale ? Number(val).toLocaleString() : val
-                }
-              }
-            },
-            plugins: {
-              legend: { display: false },
-              zoom: {
-                pan: { enabled: true, mode: 'xy' },
-                zoom: {
-                  wheel: { enabled: true },
-                  pinch: { enabled: true },
-                  mode: 'xy'
-                }
-              }
-            }
-          }
-        });
-      })
-      .catch(err => {
-        console.error(`[DEBUG] Error loading data for ${indicatorName}:`, err);
-        summary.innerText = "Error loading data.";
-      });
-  }, 100);
-}
-
     function showTab(tab) {
       // Hide all tab panes
       document.querySelectorAll(".tab-pane").forEach(p => p.classList.add("hidden"));
@@ -396,68 +311,66 @@ function openDetailModal(indicatorName) {
     }
   
     function initIndicators() {
-      document.querySelectorAll('[data-indicator]').forEach(el => {
-    const name = el.getAttribute('data-indicator');
-      if (name === "Stress Composite Score") return; 
-        fetchIndicator(name, el.id);
+        document.querySelectorAll('[data-indicator]').forEach(el => {
+            const name = el.getAttribute('data-indicator');
+            fetchIndicator(name, el.id);
 
-        const canvasId = `chart-${name.replace(/ /g, '_')}`;
-        fetch(`/api/history/${encodeURIComponent(name)}`)
-            .then(res => res.json())
-            .then(data => {
-                const values = data.values.map(v => v.value);
-                drawSparkline(canvasId, values);
-            })
-            .catch(err => {
-                console.error(`[DEBUG] Error fetching sparkline data for ${name}:`, err);
-            });
+            // Fetch historical data for sparklines
+            const canvasId = `chart-${name.replace(/ /g, '_')}`;
+            fetch(`/api/history/${encodeURIComponent(name)}`)
+                .then(res => res.json())
+                .then(data => {
+                    const values = data.values.map(v => v.value); // Extract values from history
+                    console.log(`[DEBUG] Sparkline data for ${name}:`, values); // Debug log
+                    drawSparkline(canvasId, values); // Draw the sparkline
+                })
+                .catch(err => {
+                    console.error(`[DEBUG] Error fetching sparkline data for ${name}:`, err);
+                });
+        });
 
-        // 🛠️ Attach click listener to canvas
-        const chartCanvas = document.getElementById(canvasId);
-    });
-
-    const ts = document.getElementById("timestamp");
-    if (ts) ts.innerText = new Date().toLocaleString();
-}
-
+        const ts = document.getElementById("timestamp");
+        if (ts) ts.innerText = new Date().toLocaleString();
+    }
   
-function drawSparkline(canvasId, values) {
-    const ctx = document.getElementById(canvasId);
-    if (!ctx) {
-        console.error(`[DEBUG] Canvas with ID ${canvasId} not found.`);
-        return;
-    }
-
-    if (!values || values.length === 0) {
-        console.error(`[DEBUG] No data provided for canvas ID ${canvasId}.`);
-        return;
-    }
-
-    ctx.chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: values.map((_, i) => i),
-            datasets: [{
-                data: values,
-                borderColor: "#7dd3fc",
-                tension: 0.4,
-                borderWidth: 2,
-                fill: false,
-                pointRadius: 0
-            }]
-        },
-        options: {
-            plugins: { legend: { display: false } },
-            scales: {
-                x: { display: false },
-                y: { display: false }
-            },
-            responsive: true,
-            maintainAspectRatio: false
+    function drawSparkline(canvasId, values) {
+        const ctx = document.getElementById(canvasId);
+        if (!ctx) {
+            console.error(`[DEBUG] Canvas with ID ${canvasId} not found.`);
+            return;
         }
-    });
-}
 
+        if (!values || values.length === 0) {
+            console.error(`[DEBUG] No data provided for canvas ID ${canvasId}.`);
+            return;
+        }
+
+        console.log(`[DEBUG] Drawing sparkline for ${canvasId} with values:`, values);
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: values.map((_, i) => i),
+                datasets: [{
+                    data: values,
+                    borderColor: "#7dd3fc",
+                    tension: 0.4, // Smooth the line
+                    borderWidth: 2, // Ensure line is visible
+                    fill: false, // Disable area fill
+                    pointRadius: 0 // Hide points
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: { 
+                    x: { display: false }, 
+                    y: { display: false } 
+                },
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    }
   
     function updateSniffMeter(score) {
       const el = document.getElementById("sniff-meter");
@@ -544,8 +457,91 @@ function drawSparkline(canvasId, values) {
       modal.classList.add("hidden");
     }
 
+    function openDetailModal(indicatorName) {
+      const modal = document.getElementById("detail-modal");
+      const title = document.getElementById("modal-title");
+      const summary = document.getElementById("modal-summary");
+      const chartCanvas = document.getElementById("modal-chart");
 
+      // Set modal title and show loading state
+      title.innerText = `📈 ${indicatorName}`;
+      summary.innerText = "Loading...";
+      modal.classList.remove("hidden");
 
+      // Fetch historical data for the chart
+      fetch(`/api/history/${encodeURIComponent(indicatorName)}`)
+        .then(res => {
+          if (!res.ok) {
+            throw new Error(`Failed to fetch data for ${indicatorName}: ${res.statusText}`);
+          }
+          return res.json();
+        })
+        .then(data => {
+          const values = data.values || [];
+          const start = values[0]?.value;
+          const end = values[values.length - 1]?.value;
+          const pct = start && end ? (((end - start) / start) * 100).toFixed(2) : null;
+
+          // Update summary with percentage change
+          summary.innerText = pct ? `7-day change: ${pct}%` : "No data available";
+
+          // Render chart
+          const ctx = chartCanvas.getContext("2d");
+          const logScale = logScaleIndicators.some(id => indicatorName.includes(id));
+
+          if (chartCanvas.chart) chartCanvas.chart.destroy(); // Destroy existing chart instance
+
+          chartCanvas.chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: values.map(v => v.date),
+              datasets: [{
+                label: indicatorName,
+                data: values.map(v => v.value),
+                borderColor: "#00cec9",
+                backgroundColor: "rgba(0,206,201,0.2)",
+                fill: true,
+                tension: 0.4,
+                pointRadius: 2,
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: true,
+              aspectRatio: 2,
+              interaction: { mode: 'index', intersect: false },
+              scales: {
+                x: {
+                  ticks: { maxTicksLimit: 7 }
+                },
+                y: {
+                  type: logScale ? 'logarithmic' : 'linear',
+                  beginAtZero: false,
+                  title: { display: true, text: "Value" },
+                  ticks: {
+                    callback: val => logScale ? Number(val).toLocaleString() : val
+                  }
+                }
+              },
+              plugins: {
+                legend: { display: false },
+                zoom: {
+                  pan: { enabled: true, mode: 'xy' },
+                  zoom: {
+                    wheel: { enabled: true },
+                    pinch: { enabled: true },
+                    mode: 'xy'
+                  }
+                }
+              }
+            }
+          });
+        })
+        .catch(err => {
+          console.error(`[DEBUG] Error in openDetailModal for ${indicatorName}:`, err);
+          summary.innerText = "Error loading data.";
+        });
+    }
 
     function closeDetailModal() {
       const modal = document.getElementById("detail-modal");
@@ -620,7 +616,6 @@ function loadSnifferArticles() {
     
     document.addEventListener("DOMContentLoaded", loadSnifferArticles);
     </script>
-
     
 </body>
 </html>
