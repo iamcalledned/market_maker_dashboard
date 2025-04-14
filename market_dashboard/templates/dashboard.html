@@ -301,34 +301,45 @@ Composite Score =
     }
   
     function initIndicators() {
-        document.querySelectorAll('[data-indicator]').forEach(el => {
-            const name = el.getAttribute('data-indicator');
-            fetchIndicator(name, el.id);
+    document.querySelectorAll('[data-indicator]').forEach(el => {
+        const name = el.getAttribute('data-indicator');
+        fetchIndicator(name, el.id);
 
-            // Fetch historical data for sparklines
-            const canvasId = `chart-${name.replace(/ /g, '_')}`;
-            fetch(`/api/history/${encodeURIComponent(name)}`)
-                .then(res => res.json())
-                .then(data => {
-                    const values = data.values.map(v => v.value); // Extract values from history
-                    console.log(`[DEBUG] Sparkline data for ${name}:`, values); // Debug log
-                    drawSparkline(canvasId, values); // Draw the sparkline
-                })
-                .catch(err => {
-                    console.error(`[DEBUG] Error fetching sparkline data for ${name}:`, err);
-                });
-        });
+        const canvasId = `chart-${name.replace(/ /g, '_')}`;
+        fetch(`/api/history/${encodeURIComponent(name)}`)
+            .then(res => res.json())
+            .then(data => {
+                const values = data.values.map(v => v.value);
+                drawSparkline(canvasId, values);
+            })
+            .catch(err => {
+                console.error(`[DEBUG] Error fetching sparkline data for ${name}:`, err);
+            });
 
-        const ts = document.getElementById("timestamp");
-        if (ts) ts.innerText = new Date().toLocaleString();
-    }
+        // 🛠️ Attach click listener to canvas
+        const chartCanvas = document.getElementById(canvasId);
+        if (chartCanvas) {
+            chartCanvas.addEventListener("click", () => openDetailModal(name));
+        }
+    });
+
+    const ts = document.getElementById("timestamp");
+    if (ts) ts.innerText = new Date().toLocaleString();
+}
+
   
-    function drawSparkline(canvasId, values) {
+function drawSparkline(canvasId, values) {
     const ctx = document.getElementById(canvasId);
-    if (!ctx) return;
-    if (!values || values.length === 0) return;
+    if (!ctx) {
+        console.error(`[DEBUG] Canvas with ID ${canvasId} not found.`);
+        return;
+    }
 
-    // Assign chart instance to canvas
+    if (!values || values.length === 0) {
+        console.error(`[DEBUG] No data provided for canvas ID ${canvasId}.`);
+        return;
+    }
+
     ctx.chart = new Chart(ctx, {
         type: 'line',
         data: {
