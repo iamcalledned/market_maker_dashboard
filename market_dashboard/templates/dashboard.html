@@ -251,7 +251,93 @@ Composite Score =
   </div>
   <script>
     const logScaleIndicators = ["Bitcoin", "BTC-USD", "VIX", "Gold", "GC=F", "VVIX"];
-  
+    function openDetailModal(indicatorName) {
+  const modal = document.getElementById("detail-modal");
+  const title = document.getElementById("modal-title");
+  const summary = document.getElementById("modal-summary");
+  const chartCanvas = document.getElementById("modal-chart");
+
+  console.log("[MODAL] Launching for:", indicatorName);
+
+  title.innerText = `📈 ${indicatorName}`;
+  summary.innerText = "Loading...";
+  modal.classList.remove("hidden");
+
+  // Force layout reflow to ensure canvas becomes visible
+  void modal.offsetHeight;
+
+  setTimeout(() => {
+    const ctx = chartCanvas.getContext("2d");
+    if (!ctx) {
+      console.error("[FATAL] Cannot get canvas context even after reflow.");
+      return;
+    }
+
+    fetch(`/api/history/${encodeURIComponent(indicatorName)}`)
+      .then(res => res.json())
+      .then(data => {
+        const values = data.values || [];
+        const start = values[0]?.value;
+        const end = values[values.length - 1]?.value;
+        const pct = start && end ? (((end - start) / start) * 100).toFixed(2) : null;
+
+        summary.innerText = pct ? `7-day change: ${pct}%` : "No data available";
+
+        const logScale = logScaleIndicators.some(id => indicatorName.includes(id));
+
+        if (chartCanvas.chart) chartCanvas.chart.destroy();
+
+        chartCanvas.chart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: values.map(v => v.date),
+            datasets: [{
+              label: indicatorName,
+              data: values.map(v => v.value),
+              borderColor: "#00cec9",
+              backgroundColor: "rgba(0,206,201,0.2)",
+              fill: true,
+              tension: 0.4,
+              pointRadius: 2,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 2,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+              x: { ticks: { maxTicksLimit: 7 } },
+              y: {
+                type: logScale ? 'logarithmic' : 'linear',
+                beginAtZero: false,
+                title: { display: true, text: "Value" },
+                ticks: {
+                  callback: val => logScale ? Number(val).toLocaleString() : val
+                }
+              }
+            },
+            plugins: {
+              legend: { display: false },
+              zoom: {
+                pan: { enabled: true, mode: 'xy' },
+                zoom: {
+                  wheel: { enabled: true },
+                  pinch: { enabled: true },
+                  mode: 'xy'
+                }
+              }
+            }
+          }
+        });
+      })
+      .catch(err => {
+        console.error(`[DEBUG] Error loading data for ${indicatorName}:`, err);
+        summary.innerText = "Error loading data.";
+      });
+  }, 100);
+}
+
     function showTab(tab) {
       // Hide all tab panes
       document.querySelectorAll(".tab-pane").forEach(p => p.classList.add("hidden"));
@@ -301,8 +387,9 @@ Composite Score =
     }
   
     function initIndicators() {
-    document.querySelectorAll('[data-indicator]').forEach(el => {
-        const name = el.getAttribute('data-indicator');
+      document.querySelectorAll('[data-indicator]').forEach(el => {
+    const name = el.getAttribute('data-indicator');
+      if (name === "Stress Composite Score") return; 
         fetchIndicator(name, el.id);
 
         const canvasId = `chart-${name.replace(/ /g, '_')}`;
@@ -448,90 +535,6 @@ function drawSparkline(canvasId, values) {
       modal.classList.add("hidden");
     }
 
-    function openDetailModal(indicatorName) {
-  const modal = document.getElementById("detail-modal");
-  const title = document.getElementById("modal-title");
-  const summary = document.getElementById("modal-summary");
-  const chartCanvas = document.getElementById("modal-chart");
-
-  title.innerText = `📈 ${indicatorName}`;
-  summary.innerText = "Loading...";
-  modal.classList.remove("hidden");
-
-  // Wait for canvas to become visible before drawing chart
-  modal.classList.remove("hidden");
-
-requestAnimationFrame(() => {
-  const ctx = chartCanvas.getContext("2d");
-  if (!ctx) {
-    console.error(`[DEBUG] Still couldn't get 2D context.`);
-    return;
-  }
-
-  fetch(`/api/history/${encodeURIComponent(indicatorName)}`)
-    .then(res => res.json())
-    .then(data => {
-      const values = data.values || [];
-      const start = values[0]?.value;
-      const end = values[values.length - 1]?.value;
-      const pct = start && end ? (((end - start) / start) * 100).toFixed(2) : null;
-
-      summary.innerText = pct ? `7-day change: ${pct}%` : "No data available";
-
-      const logScale = logScaleIndicators.some(id => indicatorName.includes(id));
-      if (chartCanvas.chart) chartCanvas.chart.destroy();
-
-      chartCanvas.chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: values.map(v => v.date),
-          datasets: [{
-            label: indicatorName,
-            data: values.map(v => v.value),
-            borderColor: "#00cec9",
-            backgroundColor: "rgba(0,206,201,0.2)",
-            fill: true,
-            tension: 0.4,
-            pointRadius: 2,
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: true,
-          aspectRatio: 2,
-          interaction: { mode: 'index', intersect: false },
-          scales: {
-            x: { ticks: { maxTicksLimit: 7 } },
-            y: {
-              type: logScale ? 'logarithmic' : 'linear',
-              beginAtZero: false,
-              title: { display: true, text: "Value" },
-              ticks: {
-                callback: val => logScale ? Number(val).toLocaleString() : val
-              }
-            }
-          },
-          plugins: {
-            legend: { display: false },
-            zoom: {
-              pan: { enabled: true, mode: 'xy' },
-              zoom: {
-                wheel: { enabled: true },
-                pinch: { enabled: true },
-                mode: 'xy'
-              }
-            }
-          }
-        }
-      });
-    })
-    .catch(err => {
-      console.error(`[DEBUG] Error in openDetailModal for ${indicatorName}:`, err);
-      summary.innerText = "Error loading data.";
-    });
-});
-
-}
 
 
 
@@ -564,90 +567,6 @@ requestAnimationFrame(() => {
   const div = document.createElement("div");
   div.innerHTML = html;
   return div.textContent || div.innerText || "";
-}
-function openDetailModal(indicatorName) {
-  const modal = document.getElementById("detail-modal");
-  const title = document.getElementById("modal-title");
-  const summary = document.getElementById("modal-summary");
-  const chartCanvas = document.getElementById("modal-chart");
-
-  title.innerText = `📈 ${indicatorName}`;
-  summary.innerText = "Loading...";
-  modal.classList.remove("hidden");
-
-  // Force layout reflow to ensure canvas becomes visible
-  void modal.offsetHeight;
-
-  setTimeout(() => {
-    const ctx = chartCanvas.getContext("2d");
-    if (!ctx) {
-      console.error("[FATAL] Cannot get canvas context even after reflow.");
-      return;
-    }
-
-    fetch(`/api/history/${encodeURIComponent(indicatorName)}`)
-      .then(res => res.json())
-      .then(data => {
-        const values = data.values || [];
-        const start = values[0]?.value;
-        const end = values[values.length - 1]?.value;
-        const pct = start && end ? (((end - start) / start) * 100).toFixed(2) : null;
-
-        summary.innerText = pct ? `7-day change: ${pct}%` : "No data available";
-
-        const logScale = logScaleIndicators.some(id => indicatorName.includes(id));
-
-        if (chartCanvas.chart) chartCanvas.chart.destroy();
-
-        chartCanvas.chart = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: values.map(v => v.date),
-            datasets: [{
-              label: indicatorName,
-              data: values.map(v => v.value),
-              borderColor: "#00cec9",
-              backgroundColor: "rgba(0,206,201,0.2)",
-              fill: true,
-              tension: 0.4,
-              pointRadius: 2,
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            aspectRatio: 2,
-            interaction: { mode: 'index', intersect: false },
-            scales: {
-              x: { ticks: { maxTicksLimit: 7 } },
-              y: {
-                type: logScale ? 'logarithmic' : 'linear',
-                beginAtZero: false,
-                title: { display: true, text: "Value" },
-                ticks: {
-                  callback: val => logScale ? Number(val).toLocaleString() : val
-                }
-              }
-            },
-            plugins: {
-              legend: { display: false },
-              zoom: {
-                pan: { enabled: true, mode: 'xy' },
-                zoom: {
-                  wheel: { enabled: true },
-                  pinch: { enabled: true },
-                  mode: 'xy'
-                }
-              }
-            }
-          }
-        });
-      })
-      .catch(err => {
-        console.error(`[DEBUG] Error loading data for ${indicatorName}:`, err);
-        summary.innerText = "Error loading data.";
-      });
-  }, 100);
 }
 
 function loadSnifferArticles() {
