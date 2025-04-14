@@ -254,20 +254,19 @@ Composite Score =
   <script>
     const logScaleIndicators = ["Bitcoin", "BTC-USD", "VIX", "Gold", "GC=F", "VVIX"];
   
-  function openDetailModal(indicatorName) {
-    const modal = document.getElementById("detail-modal");
-    const title = document.getElementById("modal-title");
-    const summary = document.getElementById("modal-summary");
-    const chartCanvas = document.getElementById("modal-chart");
+    function openDetailModal(indicatorName) {
+  const modal = document.getElementById("detail-modal");
+  const title = document.getElementById("modal-title");
+  const summary = document.getElementById("modal-summary");
+  const chartCanvas = document.getElementById("modal-chart");
 
-    console.log("[MODAL] Launching for:", indicatorName);
+  console.log("[MODAL] Launching for:", indicatorName);
 
-    title.innerText = `📈 ${indicatorName}`;
-    summary.innerText = "Loading...";
-    modal.classList.remove("hidden");
-
-    // Force layout reflow to ensure canvas becomes visible
-    void modal.offsetHeight;
+  title.innerText = `📈 ${indicatorName}`;
+  summary.innerText = "Loading...";
+  modal.classList.remove("hidden");
+  modal.style.display = "flex";  // <-- add this
+  void modal.offsetHeight;
 
   setTimeout(() => {
     const ctx = chartCanvas.getContext("2d");
