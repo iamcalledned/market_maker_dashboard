@@ -241,9 +241,7 @@ Composite Score =
         <button onclick="closeDetailModal()" class="absolute top-2 right-2 text-xl font-bold text-gray-300">✕</button>
         <h3 id="modal-title" class="text-xl font-semibold mb-2">📈 Detail</h3>
         <p id="modal-summary" class="text-sm text-gray-400 mb-4">Summary here</p>
-        <div style="height: 300px; width: 100%;">
-          <canvas id="modal-chart" width="600" height="300" style="width:100%; height:100%;"></canvas>
-        </div>
+        <div style="height: 300px;"><canvas id="modal-chart"></canvas></div>
       </div>
     </div>
 
@@ -254,34 +252,28 @@ Composite Score =
   <script>
     const logScaleIndicators = ["Bitcoin", "BTC-USD", "VIX", "Gold", "GC=F", "VVIX"];
   
-    function openDetailModal(indicatorName) {
+  
+function openDetailModal(indicatorName) {
   const modal = document.getElementById("detail-modal");
-modal.classList.remove("hidden");
-modal.style.display = "flex";
+  const title = document.getElementById("modal-title");
+  const summary = document.getElementById("modal-summary");
+  const chartCanvas = document.getElementById("modal-chart");
 
-// Wait for the modal to visibly render before building the chart
-setTimeout(() => {
-  const ctx = chartCanvas.getContext("2d");
-  if (!ctx) return;
+  console.log("[MODAL] Launching for:", indicatorName);
 
-  chartCanvas.chart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: ['A', 'B', 'C'],
-      datasets: [{
-        label: indicatorName,
-        data: [1, 2, 3],
-        borderColor: 'blue',
-        fill: true
-      }]
-    },
-    options: {
-      responsive: false,
-      maintainAspectRatio: false
-    }
+  title.innerText = `📈 ${indicatorName}`;
+  summary.innerText = "Loading...";
+  modal.classList.remove("hidden");
+  modal.style.display = "flex";
+
+  Object.assign(modal.style, {
+    position: "fixed",
+    inset: "0",
+    backgroundColor: "rgba(0,0,0,0.7)",
+    zIndex: "99999",
+    opacity: "1",
+    visibility: "visible",
   });
-}, 100);  // Delay lets canvas layout stabilize
-
 
   setTimeout(() => {
     const ctx = chartCanvas.getContext("2d");
@@ -632,4 +624,3 @@ function loadSnifferArticles() {
     
 </body>
 </html>
-``` 
