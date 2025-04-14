@@ -449,92 +449,93 @@ function drawSparkline(canvasId, values) {
     }
 
     function openDetailModal(indicatorName) {
-      const modal = document.getElementById("detail-modal");
-      const title = document.getElementById("modal-title");
-      const summary = document.getElementById("modal-summary");
-      const chartCanvas = document.getElementById("modal-chart");
+  const modal = document.getElementById("detail-modal");
+  const title = document.getElementById("modal-title");
+  const summary = document.getElementById("modal-summary");
+  const chartCanvas = document.getElementById("modal-chart");
 
-      // Set modal title and show loading state
-      title.innerText = `📈 ${indicatorName}`;
-      summary.innerText = "Loading...";
-      modal.classList.remove("hidden");
+  title.innerText = `📈 ${indicatorName}`;
+  summary.innerText = "Loading...";
+  modal.classList.remove("hidden");
 
-// Wait for the modal to become visible so canvas can get context
-setTimeout(() => {
-  fetch(`/api/history/${encodeURIComponent(indicatorName)}`)
-    .then(res => {
-      if (!res.ok) {
-        throw new Error(`Failed to fetch data for ${indicatorName}: ${res.statusText}`);
-      }
-      return res.json();
-    })
-    .then(data => {
-      const values = data.values || [];
-      const start = values[0]?.value;
-      const end = values[values.length - 1]?.value;
-      const pct = start && end ? (((end - start) / start) * 100).toFixed(2) : null;
+  // Wait for canvas to become visible before drawing chart
+  setTimeout(() => {
+    fetch(`/api/history/${encodeURIComponent(indicatorName)}`)
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`Failed to fetch data for ${indicatorName}: ${res.statusText}`);
+        }
+        return res.json();
+      })
+      .then(data => {
+        const values = data.values || [];
+        const start = values[0]?.value;
+        const end = values[values.length - 1]?.value;
+        const pct = start && end ? (((end - start) / start) * 100).toFixed(2) : null;
 
-      summary.innerText = pct ? `7-day change: ${pct}%` : "No data available";
+        summary.innerText = pct ? `7-day change: ${pct}%` : "No data available";
 
-      const ctx = chartCanvas.getContext("2d");
-      if (!ctx) {
-        console.error(`[DEBUG] Could not get 2D context for modal-chart`);
-        return;
-      }
+        const ctx = chartCanvas.getContext("2d");
+        if (!ctx) {
+          console.error(`[DEBUG] Could not get 2D context for modal-chart`);
+          return;
+        }
 
-      const logScale = logScaleIndicators.some(id => indicatorName.includes(id));
+        const logScale = logScaleIndicators.some(id => indicatorName.includes(id));
 
-      if (chartCanvas.chart) chartCanvas.chart.destroy();
+        if (chartCanvas.chart) chartCanvas.chart.destroy();
 
-      chartCanvas.chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: values.map(v => v.date),
-          datasets: [{
-            label: indicatorName,
-            data: values.map(v => v.value),
-            borderColor: "#00cec9",
-            backgroundColor: "rgba(0,206,201,0.2)",
-            fill: true,
-            tension: 0.4,
-            pointRadius: 2,
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: true,
-          aspectRatio: 2,
-          interaction: { mode: 'index', intersect: false },
-          scales: {
-            x: { ticks: { maxTicksLimit: 7 } },
-            y: {
-              type: logScale ? 'logarithmic' : 'linear',
-              beginAtZero: false,
-              title: { display: true, text: "Value" },
-              ticks: {
-                callback: val => logScale ? Number(val).toLocaleString() : val
-              }
-            }
+        chartCanvas.chart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: values.map(v => v.date),
+            datasets: [{
+              label: indicatorName,
+              data: values.map(v => v.value),
+              borderColor: "#00cec9",
+              backgroundColor: "rgba(0,206,201,0.2)",
+              fill: true,
+              tension: 0.4,
+              pointRadius: 2,
+            }]
           },
-          plugins: {
-            legend: { display: false },
-            zoom: {
-              pan: { enabled: true, mode: 'xy' },
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 2,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+              x: { ticks: { maxTicksLimit: 7 } },
+              y: {
+                type: logScale ? 'logarithmic' : 'linear',
+                beginAtZero: false,
+                title: { display: true, text: "Value" },
+                ticks: {
+                  callback: val => logScale ? Number(val).toLocaleString() : val
+                }
+              }
+            },
+            plugins: {
+              legend: { display: false },
               zoom: {
-                wheel: { enabled: true },
-                pinch: { enabled: true },
-                mode: 'xy'
+                pan: { enabled: true, mode: 'xy' },
+                zoom: {
+                  wheel: { enabled: true },
+                  pinch: { enabled: true },
+                  mode: 'xy'
+                }
               }
             }
           }
-        }
+        });
+      })
+      .catch(err => {
+        console.error(`[DEBUG] Error in openDetailModal for ${indicatorName}:`, err);
+        summary.innerText = "Error loading data.";
       });
-    })
-    .catch(err => {
-      console.error(`[DEBUG] Error in openDetailModal for ${indicatorName}:`, err);
-      summary.innerText = "Error loading data.";
-    });
-}, 50); // 👈 this delay lets the canvas become visible
+  }, 50);
+}
+
 
 
     function closeDetailModal() {
