@@ -439,22 +439,35 @@ Composite Score =
       const title = document.getElementById("modal-title");
       const summary = document.getElementById("modal-summary");
       const chartCanvas = document.getElementById("modal-chart");
-  
+
+      // Set modal title and show loading state
       title.innerText = `📈 ${indicatorName}`;
       summary.innerText = "Loading...";
       modal.classList.remove("hidden");
+
+      // Fetch historical data for the chart
       fetch(`/api/history/${encodeURIComponent(indicatorName)}`)
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) {
+            throw new Error(`Failed to fetch data for ${indicatorName}: ${res.statusText}`);
+          }
+          return res.json();
+        })
         .then(data => {
           const values = data.values || [];
           const start = values[0]?.value;
           const end = values[values.length - 1]?.value;
           const pct = start && end ? (((end - start) / start) * 100).toFixed(2) : null;
-          const ctx = chartCanvas.getContext("2d");
+
+          // Update summary with percentage change
           summary.innerText = pct ? `7-day change: ${pct}%` : "No data available";
-  
+
+          // Render chart
+          const ctx = chartCanvas.getContext("2d");
           const logScale = logScaleIndicators.some(id => indicatorName.includes(id));
-          if (chartCanvas.chart) chartCanvas.chart.destroy();
+
+          if (chartCanvas.chart) chartCanvas.chart.destroy(); // Destroy existing chart instance
+
           chartCanvas.chart = new Chart(ctx, {
             type: 'line',
             data: {
@@ -500,6 +513,10 @@ Composite Score =
               }
             }
           });
+        })
+        .catch(err => {
+          console.error(`[DEBUG] Error in openDetailModal for ${indicatorName}:`, err);
+          summary.innerText = "Error loading data.";
         });
     }
 
@@ -579,4 +596,3 @@ function loadSnifferArticles() {
     
 </body>
 </html>
-``` 
