@@ -458,95 +458,90 @@ Composite Score =
     }
 
     function openDetailModal(indicatorName) {
-      const modal = document.getElementById("detail-modal");
-      const title = document.getElementById("modal-title");
-      const summary = document.getElementById("modal-summary");
-      const chartCanvas = document.getElementById("modal-chart");
+  // Blow away any old modal
+  const existing = document.getElementById("atomic-modal");
+  if (existing) existing.remove();
 
-      // Set modal title and show loading state
-      title.innerText = `📈 ${indicatorName}`;
-      summary.innerText = "Loading...";
-      modal.classList.remove("hidden");
-      modal.style.display = "flex";
-      modal.style.opacity = "1";
-      modal.style.zIndex = "9999";
+  // Create modal container
+  const modal = document.createElement("div");
+  modal.id = "atomic-modal";
+  modal.style.position = "fixed";
+  modal.style.inset = "0";
+  modal.style.background = "rgba(0,0,0,0.7)";
+  modal.style.display = "flex";
+  modal.style.alignItems = "center";
+  modal.style.justifyContent = "center";
+  modal.style.zIndex = "99999";
 
-      // Fetch historical data for the chart
-      fetch(`/api/history/${encodeURIComponent(indicatorName)}`)
-        .then(res => {
-          if (!res.ok) {
-            throw new Error(`Failed to fetch data for ${indicatorName}: ${res.statusText}`);
-          }
-          return res.json();
-        })
-        .then(data => {
-          const values = data.values || [];
-          const start = values[0]?.value;
-          const end = values[values.length - 1]?.value;
-          const pct = start && end ? (((end - start) / start) * 100).toFixed(2) : null;
+  // Create modal box
+  const box = document.createElement("div");
+  box.style.background = "#fff";
+  box.style.borderRadius = "10px";
+  box.style.padding = "2rem";
+  box.style.width = "90%";
+  box.style.maxWidth = "700px";
+  box.style.position = "relative";
+  box.innerHTML = `
+    <button onclick="document.getElementById('atomic-modal').remove()" style="position:absolute;top:10px;right:20px;font-size:1.5rem;">✕</button>
+    <h3 style="font-size: 1.5rem; margin-bottom: 0.5rem;">📈 ${indicatorName}</h3>
+    <p id="modal-summary">Loading...</p>
+    <canvas id="atomic-chart" width="600" height="300" style="display:block;margin-top:1rem;"></canvas>
+  `;
 
-          // Update summary with percentage change
-          summary.innerText = pct ? `7-day change: ${pct}%` : "No data available";
+  modal.appendChild(box);
+  document.body.appendChild(modal);
 
-          // Render chart
-          chartCanvas.style.width = "600px";
-          chartCanvas.style.height = "300px";
-          const ctx = chartCanvas.getContext("2d");
-          const logScale = logScaleIndicators.some(id => indicatorName.includes(id));
+  // Fetch and render chart
+  fetch(`/api/history/${encodeURIComponent(indicatorName)}`)
+    .then(res => res.json())
+    .then(data => {
+      const values = data.values || [];
+      const start = values[0]?.value;
+      const end = values[values.length - 1]?.value;
+      const pct = start && end ? (((end - start) / start) * 100).toFixed(2) : null;
 
-          if (chartCanvas.chart) chartCanvas.chart.destroy(); // Destroy existing chart instance
+      document.getElementById("modal-summary").innerText = pct
+        ? `7-day change: ${pct}%`
+        : "No data available";
 
-          chartCanvas.chart = new Chart(ctx, {
-            type: 'line',
-            data: {
-              labels: values.map(v => v.date),
-              datasets: [{
-                label: indicatorName,
-                data: values.map(v => v.value),
-                borderColor: "#00cec9",
-                backgroundColor: "rgba(0,206,201,0.2)",
-                fill: true,
-                tension: 0.4,
-                pointRadius: 2,
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: true,
-              aspectRatio: 2,
-              interaction: { mode: 'index', intersect: false },
-              scales: {
-                x: {
-                  ticks: { maxTicksLimit: 7 }
-                },
-                y: {
-                  type: logScale ? 'logarithmic' : 'linear',
-                  beginAtZero: false,
-                  title: { display: true, text: "Value" },
-                  ticks: {
-                    callback: val => logScale ? Number(val).toLocaleString() : val
-                  }
-                }
-              },
-              plugins: {
-                legend: { display: false },
-                zoom: {
-                  pan: { enabled: true, mode: 'xy' },
-                  zoom: {
-                    wheel: { enabled: true },
-                    pinch: { enabled: true },
-                    mode: 'xy'
-                  }
-                }
-              }
+      const ctx = document.getElementById("atomic-chart").getContext("2d");
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: values.map(v => v.date),
+          datasets: [{
+            label: indicatorName,
+            data: values.map(v => v.value),
+            borderColor: "#00cec9",
+            backgroundColor: "rgba(0,206,201,0.2)",
+            fill: true,
+            tension: 0.4,
+            pointRadius: 2,
+          }]
+        },
+        options: {
+          responsive: false,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            zoom: {
+              pan: { enabled: true, mode: 'xy' },
+              zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'xy' }
             }
-          });
-        })
-        .catch(err => {
-          console.error(`[DEBUG] Error in openDetailModal for ${indicatorName}:`, err);
-          summary.innerText = "Error loading data.";
-        });
-    }
+          },
+          scales: {
+            x: { ticks: { maxTicksLimit: 7 } },
+            y: { beginAtZero: false }
+          }
+        }
+      });
+    })
+    .catch(err => {
+      document.getElementById("modal-summary").innerText = "Error loading chart.";
+      console.error("[Chart Error]", err);
+    });
+}
 
     function closeDetailModal() {
       const modal = document.getElementById("detail-modal");
