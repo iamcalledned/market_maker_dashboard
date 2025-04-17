@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Ned's Baskets</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.0.0/dist/full.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      /* Glowing header style similar to Market Overview */
+      .glow {
+        text-shadow: 0 0 10px #93c5fd;
+      }
+      /* Glass-like card style */
+      .glass-card {
+        backdrop-filter: blur(12px);
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        transition: all 0.3s ease;
+      }
+      .glass-card:hover {
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.12);
+        transform: scale(1.02);
+      }
+      /* Color helpers for up/down metrics */
+      .text-success { color: #4ade80; }
+      .text-error { color: #f87171; }
+      /* Mini animation on updates */
+      .fade-update {
+        transition: all 0.4s ease;
+      }
+      /* Sparkline styling */
+      canvas.sparkline {
+        width: 100%;
+        height: 30px;
+        max-height: 30px;
+      }
+    </style>
+  </head>
+  <body class="bg-neutral text-neutral-content">
+    <div class="max-w-7xl mx-auto p-6">
+      <!-- Header Summary Section -->
+      <header class="mb-6">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+          <div class="mb-6">
+            <h2 class="text-2xl font-bold text-primary glow">
+              🇺🇸 {{ basket_info.name|capitalize }} Basket
+            </h2>
+            <p class="text-sm text-gray-400">
+              Based on a ${{ basket_info.initial_investment | float | round(2) }} investment on {{ basket_info.investment_date }}
+            </p>
+            <p class="mt-2">
+              Total Current Value: 
+              <span class="font-semibold">${{ total_value | float | round(2) }}</span> |
+              Total Return: 
+              <span class="font-semibold">{{ total_return_percent | float | round(2) }}%</span>
+              {% if total_return_percent | float >= 0 %}
+                <span title="Positive Performance">🚀</span>
+              {% else %}
+                <span title="Negative Performance">📉</span>
+              {% endif %}
+            </p>
+            <div class="mt-2">
+              <span class="text-sm mr-2">Sniff Score Relevance:</span>
+              <progress class="progress progress-info w-48" value="70" max="100"></progress>
+            </div>
+          </div>
+          <div class="dropdown mt-4 md:mt-0">
+            <label tabindex="0" class="btn btn-outline">Select Basket</label>
+            <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-200 rounded-box w-52">
+              {% for basket in all_baskets %}
+                <li><a href="/baskets/{{ basket.name }}">{{ basket.name|capitalize }} Basket</a></li>
+              {% endfor %}
+            </ul>
+          </div>
+          <div class="flex flex-wrap gap-2 mt-4 md:mt-0">
+            <button class="btn btn-sm btn-outline" onclick="sortBasket('gain')">Sort by Gain/Loss %</button>
+            <button class="btn btn-sm btn-outline" onclick="sortBasket('allocation')">Sort by Allocation %</button>
+            <button class="btn btn-sm btn-outline" onclick="sortBasket('alphabetical')">Sort Alphabetically</button>
+          </div>
+        </div>
+        <a href="/overview" class="btn btn-sm btn-outline mt-4">← Back to Market Overview</a>
+      </header>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for stock in trump_basket %}
+          <div id="card-{{ stock.ticker }}" data-shares="{{ stock.shares }}" onclick="window.location.href='/details/{{ stock.ticker }}'" class="glass-card rounded-xl p-5 shadow-md cursor-pointer hover:shadow-xl transition duration-300">
+            <div class="mb-2">
+              <h3 class="text-lg font-bold">
+                {{ stock.ticker }} - {{ stock.name }}
+                {% if stock.allocation_percent > 10 %}<span title="High allocation">🔥</span>{% endif %}
+                {% if stock.return_percent < -10 %}<span title="Big loss">🚨</span>{% endif %}
+              </h3>
+            </div>
+            <div class="mb-2">
+              <span>Current Price: </span>
+              <span id="{{ stock.ticker }}-price" class="font-semibold">${{ '%.2f'|format(stock.current_price) }}</span>
+              <span id="{{ stock.ticker }}-change" class="ml-2 {% if stock.change_percent|float >= 0 %}text-success{% else %}text-error{% endif %}">
+                ({{ stock.change_percent }}%)
+              </span>
+            </div>
+            <div class="mb-2"><span>Initial Investment: </span><span class="font-semibold">${{ '%.2f'|format(stock.initial_investment) }}</span></div>
+            <div class="mb-2"><span>Current Value: </span><span id="{{ stock.ticker }}-value" class="font-semibold">${{ '%.2f'|format(stock.current_value) }}</span></div>
+            <div class="mb-2">
+              <span>Allocation: </span>
+              <span id="{{ stock.ticker }}-alloc" class="font-semibold">{{ '%.2f'|format(stock.allocation_percent) }}%</span>
+              <progress id="{{ stock.ticker }}-alloc-bar" class="progress progress-sm w-full" value="{{ stock.allocation_percent }}" max="100"></progress>
+            </div>
+            <div class="mt-4"><canvas id="spark-{{ stock.ticker }}" class="sparkline"></canvas></div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+    <script>
+let lastSort = null;
+let lastDirection = 'desc';
+async function refreshBasketPrices() {
+  const cards = document.querySelectorAll('.glass-card');
+  let total = 0;
+  const prices = {};
+  const values = {};
+  const percents = {};
+  for (const card of cards) {
+    const tickerElem = card.querySelector('h3');
+    const symbol = tickerElem.innerText.split(' ')[0];
+    try {
+      const quote = await fetch(`/api/quote/${encodeURIComponent(symbol)}`).then(r => r.json());
+      if (!quote || !quote.price) continue;
+      const price = parseFloat(quote.price);
+      const changePercent = parseFloat(quote.percent);
+      const shares = parseFloat(card.getAttribute('data-shares')) || 0;
+      const value = price * shares;
+      prices[symbol] = price.toFixed(2);
+      values[symbol] = value;
+      percents[symbol] = isNaN(changePercent) ? null : changePercent;
+      total += value;
+    } catch (err) { console.error(`[Fetch Error] ${symbol}`, err); }
+  }
+  cards.forEach(card => {
+    const tickerElem = card.querySelector('h3');
+    const symbol = tickerElem.innerText.split(' ')[0];
+    if (!prices[symbol]) return;
+    const priceSpan = card.querySelector(`#${symbol}-price`);
+    const valueSpan = card.querySelector(`#${symbol}-value`);
+    const changeSpan = card.querySelector(`#${symbol}-change`);
+    const allocSpan = card.querySelector(`#${symbol}-alloc`);
+    const allocBar = card.querySelector(`#${symbol}-alloc-bar`);
+    if (priceSpan) priceSpan.innerText = `$${prices[symbol]}`;
+    if (valueSpan) valueSpan.innerText = `$${parseFloat(values[symbol]).toFixed(2)}`;
+    if (changeSpan && percents[symbol] !== null) {
+      const icon = percents[symbol] > 0 ? '📈' : percents[symbol] < 0 ? '📉' : '⏸️';
+      changeSpan.innerText = `${icon} ${(percents[symbol] >= 0 ? '+' : '') + percents[symbol].toFixed(2)}%`;
+      changeSpan.classList.remove("text-success", "text-error");
+      changeSpan.classList.add(percents[symbol] >= 0 ? "text-success" : "text-error");
+    }
+    const allocPercent = total ? (values[symbol] / total * 100) : 0;
+    if (allocSpan) allocSpan.innerText = `${allocPercent.toFixed(2)}%`;
+    if (allocBar) allocBar.value = allocPercent;
+  });
+}
+function sortBasket(criteria) {
+  const grid = document.querySelector(".grid");
+  const cards = Array.from(document.querySelectorAll(".glass-card"));
+  let direction = 'desc';
+  if (lastSort === criteria) {
+    direction = lastDirection === 'desc' ? 'asc' : 'desc';
+  }
+  lastSort = criteria;
+  lastDirection = direction;
+  cards.sort((a, b) => {
+    const aTicker = a.querySelector("h3").innerText.split(" ")[0];
+    const bTicker = b.querySelector("h3").innerText.split(" ")[0];
+    const aChange = parseFloat(a.querySelector(`#${aTicker}-change`)?.innerText.replace(/[()%📈📉⏸️]/g, '')) || 0;
+    const bChange = parseFloat(b.querySelector(`#${bTicker}-change`)?.innerText.replace(/[()%📈📉⏸️]/g, '')) || 0;
+    const aAlloc = parseFloat(a.querySelector(`#${aTicker}-alloc`)?.innerText.replace('%', '')) || 0;
+    const bAlloc = parseFloat(b.querySelector(`#${bTicker}-alloc`)?.innerText.replace('%', '')) || 0;
+    if (criteria === 'gain') return direction === 'desc' ? bChange - aChange : aChange - bChange;
+    if (criteria === 'allocation') return direction === 'desc' ? bAlloc - aAlloc : aAlloc - bAlloc;
+    if (criteria === 'alphabetical') return direction === 'desc' ? bTicker.localeCompare(aTicker) : aTicker.localeCompare(bTicker);
+    return 0;
+  });
+  cards.forEach(card => grid.appendChild(card));
+}
+(async () => {
+  await refreshBasketPrices();
+  setInterval(refreshBasketPrices, 10000);
+})();
+</script>
+  </body>
+</html>

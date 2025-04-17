@@ -1,0 +1,144 @@
+
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Market Details</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.0.0/dist/full.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #111827;
+    }
+    .section-header {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #93c5fd;
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding-bottom: 0.25rem;
+    }
+    .stat-box {
+      background-color: #1f2937;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+  </style>
+</head>
+<body class="bg-neutral text-neutral-content">
+  <div class="max-w-7xl mx-auto p-6">
+    <div class="mb-6 flex items-center justify-between">
+      <h1 class="text-2xl font-bold">📊 Market Details: {{ symbol }}</h1>
+      <a href="/overview" class="btn btn-sm btn-outline">← Back to Overview</a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+      <div class="stat-box">
+        <div class="section-header">Intraday Stats</div>
+        <div><strong>Price:</strong> <span id="price">⏳</span></div>
+        <div><strong>Change:</strong> <span id="change">...</span></div>
+        <div><strong>Open:</strong> <span id="open">...</span></div>
+        <div><strong>High:</strong> <span id="high">...</span></div>
+        <div><strong>Low:</strong> <span id="low">...</span></div>
+        <div><strong>Volume:</strong> <span id="volume">...</span></div>
+      </div>
+      <div class="stat-box">
+        <div class="section-header">Performance</div>
+        <div><strong>1D:</strong> <span id="perf-1d">...</span></div>
+        <div><strong>5D:</strong> <span id="perf-5d">...</span></div>
+        <div><strong>1M:</strong> <span id="perf-1m">...</span></div>
+        <div><strong>6M:</strong> <span id="perf-6m">...</span></div>
+        <div><strong>YTD:</strong> <span id="perf-ytd">...</span></div>
+        <div><strong>52-Week Range:</strong> <span id="range-52w">...</span></div>
+      </div>
+    </div>
+
+    <div class="stat-box">
+      <div class="section-header">Intraday Chart</div>
+      <canvas id="chart" height="100"></canvas>
+    </div>
+  </div>
+
+  <script>
+    const symbol = "{{ symbol }}";
+
+    async function loadDetails() {
+  try {
+    const quoteRes = await fetch(`/api/quote/${encodeURIComponent(symbol)}`);
+    const quoteData = await quoteRes.json();
+    const perf = quoteData.performance;
+    if (perf) {
+      document.getElementById("perf-1d").innerText = `${perf["1d"]?.toFixed(2)}%`;
+      document.getElementById("perf-5d").innerText = `${perf["5d"]?.toFixed(2)}%`;
+      document.getElementById("perf-1m").innerText = `${perf["1m"]?.toFixed(2)}%`;
+      document.getElementById("perf-6m").innerText = `${perf["6m"]?.toFixed(2)}%`;
+      document.getElementById("perf-ytd").innerText = `${perf["ytd"]?.toFixed(2)}%`;
+      document.getElementById("range-52w").innerText = `${perf["low_52w"]?.toFixed(2)} / ${perf["high_52w"]?.toFixed(2)}`;
+    }
+
+    if (quoteData.error) throw new Error(quoteData.error);
+
+    document.getElementById("price").innerText = quoteData.price;
+    document.getElementById("change").innerHTML =
+      `<span class="${quoteData.change >= 0 ? 'text-success' : 'text-error'}">
+        ${quoteData.change >= 0 ? '+' : ''}${quoteData.change} (${quoteData.percent}%)
+      </span>`;
+    document.getElementById("open").innerText = quoteData.open ?? 'N/A';
+    document.getElementById("high").innerText = quoteData.high ?? 'N/A';
+    document.getElementById("low").innerText = quoteData.low ?? 'N/A';
+    document.getElementById("volume").innerText = quoteData.volume?.toLocaleString() ?? 'N/A';
+  } catch (err) {
+    document.getElementById("change").innerText = "Failed to load quote.";
+    console.error("Quote fetch error:", err);
+  }
+
+  try {
+    const res = await fetch(`/api/intraday/${encodeURIComponent(symbol)}`);
+    const raw = await res.json();
+    const chartData = raw.chart.result[0];
+    const timestamps = chartData.timestamp.map(ts =>
+      new Date(ts * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+    );
+    const prices = chartData.indicators.quote[0].close;
+
+    new Chart(document.getElementById("chart"), {
+      type: 'line',
+      data: {
+        labels: timestamps,
+        datasets: [{
+          data: prices,
+          borderColor: "#22d3ee",
+          fill: false,
+          tension: 0.4,
+          borderWidth: 2,
+          pointRadius: 0
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { autoSkip: true, maxTicksLimit: 12 }, title: { display: true, text: 'Time' } },
+          y: { title: { display: true, text: 'Price' } }
+        },
+        interaction: {
+          mode: 'nearest',
+          intersect: false,
+          axis: 'x'
+        }
+      }
+    });
+  } catch (err) {
+    console.error("Chart error:", err);
+    document.getElementById("chart").insertAdjacentHTML("beforebegin", "<p class='text-error mb-2'>Error loading chart.</p>");
+  }
+}
+
+    loadDetails();
+  </script>
+</body>
+</html>

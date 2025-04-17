@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Market Overview</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.0.0/dist/full.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #1a1c1f;
+    }
+    .glass-card {
+      backdrop-filter: blur(12px);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.3s ease;
+    }
+    .glass-card:hover {
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.12);
+      transform: scale(1.02);
+    }
+    .glow {
+      text-shadow: 0 0 10px #93c5fd;
+    }
+    .fade-update {
+      transition: all 0.4s ease;
+    }
+    /* Updated sparkline styling: rely solely on CSS */
+    canvas.sparkline {
+      width: 100%;
+      height: 30px;
+      max-height: 30px;
+    }
+  </style>
+</head>
+<body class="bg-neutral text-neutral-content">
+  <div class="mb-8 flex flex-col items-center">
+    <h1 class="text-4xl font-bold glow mb-4">📊 Market Overview</h1>
+    
+    <div class="flex flex-wrap gap-4 justify-center">
+      <a href="/dashboard" class="btn btn-sm btn-outline flex items-center gap-2">
+        📈 Market Dashboard
+      </a>
+  
+      <div class="dropdown dropdown-hover">
+        <label tabindex="0" class="btn btn-sm btn-outline flex items-center gap-2">
+          🧺 Ned's Baskets
+        </label>
+        <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-200 rounded-box w-52 z-[999]">
+          {% for basket in all_baskets %}
+            <li>
+              <a href="/baskets/{{ basket.name }}">{{ basket.name|capitalize }} Basket</a>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+  
+    </div>
+  </div>
+  
+    <!-- Start Sniff Score Section -->
+    <div class="mt-6 text-center">
+   
+      
+      <!-- Button Row -->
+      <div class="flex justify-center gap-4 mt-2">
+        <button class="btn btn-sm btn-outline" onclick="showSniffMath()">🔍 Sniff Math</button>
+        <a href="/methodology" class="btn btn-sm btn-outline flex items-center gap-2">
+          📘 Sniff Methodology
+        </a>
+      </div>
+    
+      <div id="sniff-score" class="text-5xl font-extrabold text-primary animate-pulse mt-4">⏳</div>
+      <div id="sniff-desc" class="mt-2 text-sm text-gray-400"></div>
+      <div class="text-sm text-gray-400 mt-2">
+        <span id="next-sniff-refresh">Next score refresh in 60s</span>
+      </div>
+      <h2 class="text-xl font-semibold mb-2 text-primary">Sniff Score</h2>
+    </div>
+    <!-- End Sniff Score Section -->
+
+    <!-- Start Ticker Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-10">
+      {% for ticker in tickers %}
+      <div id="card-{{ ticker.symbol }}" onclick="window.location.href='/details/{{ ticker.symbol }}'" class="glass-card rounded-xl p-5 shadow-md cursor-pointer hover:shadow-xl transition duration-300">
+        <div class="flex justify-between items-center mb-2">
+          <h2 class="text-sm text-gray-400">{{ ticker.label }}</h2>
+          <div id="{{ ticker.symbol }}-sentiment" class="text-xl" title=""></div>
+        </div>
+        <div class="text-4xl font-bold fade-update" id="{{ ticker.symbol }}-price">⏳</div>
+        <div class="text-sm mt-1 fade-update" id="{{ ticker.symbol }}-change">Loading...</div>
+        <!-- Remove height attribute; use the sparkline class for styling -->
+        <canvas id="spark-{{ ticker.symbol }}" class="sparkline mt-2"></canvas>
+        <div class="text-xs text-gray-400 mt-1" id="{{ ticker.symbol }}-range">Day Range: —</div>
+        <div id="{{ ticker.symbol }}-timestamp" class="text-xs text-gray-500 mt-1"></div>
+      </div>
+      {% endfor %}
+    </div>
+    <!-- End Ticker Cards -->
+  </div>
+
+  <dialog id="sniff-math-modal" class="modal">
+    <form method="dialog" class="modal-box bg-base-200 text-base-content">
+      <h3 class="font-bold text-lg mb-2">Sniff Score Breakdown</h3>
+      <pre id="sniff-math-content" class="text-sm whitespace-pre-wrap text-left"></pre>
+      <div class="modal-action mt-4">
+        <button class="btn btn-sm">Close</button>
+      </div>
+    </form>
+  </dialog>
+  
+  <script type="text/javascript">
+    const tickers = {{ tickers | tojson | default('[]', true) }};
+    
+    function timeAgo(ts) {
+      const now = new Date();
+      const updated = new Date(ts);
+      const diffMin = (now - updated) / 60000;
+      if (isNaN(diffMin)) return "";
+      if (diffMin < 1) return "Last update: just now";
+      if (diffMin < 60) return `Last update: ${Math.floor(diffMin)} min ago`;
+      return `Last update: ${updated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    }
+    
+    tickers.forEach(t => {
+      fetch(`/api/quote/${encodeURIComponent(t.symbol)}`)
+        .then(res => res.json())
+        .then(data => {
+          const priceEl = document.getElementById(`${t.symbol}-price`);
+          const changeEl = document.getElementById(`${t.symbol}-change`);
+          const rangeEl = document.getElementById(`${t.symbol}-range`);
+          const sentimentEl = document.getElementById(`${t.symbol}-sentiment`);
+          const timestampEl = document.getElementById(`${t.symbol}-timestamp`);
+          const cardEl = document.getElementById(`card-${t.symbol}`);
+    
+          if (!data || data.error || !priceEl) return;
+    
+          const cls = data.change >= 0 ? "text-success" : data.change < 0 ? "text-error" : "text-warning";
+          const icon = data.change >= 1 ? "🐂" : data.change <= -1 ? "🐻" : "😐";
+    
+          priceEl.innerText = data.price.toFixed(2);
+          priceEl.classList.add("fade-update");
+    
+          let changeHtml = `<span class="${cls}">${data.change >= 0 ? '+' : ''}${data.change} (${data.percent}%)</span>`;
+          if (data.extended && cardEl) {
+            changeHtml += ` <span class="text-xs text-warning">(after hours)</span>`;
+            cardEl.classList.add("bg-base-300");
+          }
+          changeEl.innerHTML = changeHtml;
+          changeEl.classList.add("fade-update");
+    
+          rangeEl.innerText = `Day Range: ${data.low ?? '—'} / ${data.high ?? '—'}`;
+          sentimentEl.innerText = icon;
+    
+          if (timestampEl && data.timestamp) {
+            let secondsLeft = 10;
+            function startCountdown() {
+              timestampEl.innerText = `Next refresh in ${secondsLeft}s`;
+    
+              if (window[t.symbol + "_interval"]) clearInterval(window[t.symbol + "_interval"]);
+              window[t.symbol + "_interval"] = setInterval(() => {
+                secondsLeft--;
+                if (secondsLeft <= 0) {
+                  clearInterval(window[t.symbol + "_interval"]);
+                  fetch(`/api/quote/${encodeURIComponent(t.symbol)}`)
+                    .then(res => res.json())
+                    .then(newData => {
+                      if (newData && !newData.error) {
+                        priceEl.innerText = newData.price.toFixed(2);
+                        changeEl.innerHTML = `<span class="${cls}">${newData.change >= 0 ? '+' : ''}${newData.change} (${newData.percent}%)</span>`;
+                        rangeEl.innerText = `Day Range: ${newData.low ?? '—'} / ${newData.high ?? '—'}`;
+                        sentimentEl.innerText = newData.change >= 1 ? "🐂" : newData.change <= -1 ? "🐻" : "😐";
+                        timestampEl.innerText = `Next refresh in 10s`;
+                      }
+                      secondsLeft = 10;
+                      startCountdown();
+                    });
+                } else {
+                  timestampEl.innerText = `Next refresh in ${secondsLeft}s`;
+                }
+              }, 1000);
+            }
+    
+            startCountdown();
+          }
+        })
+        .catch(err => console.error(`[Quote Error] ${t.symbol}`, err));
+    
+      fetch(`/api/history/${encodeURIComponent(t.symbol)}`)
+        .then(res => res.json())
+        .then(data => {
+          const raw = data.values.map(v => v.value);
+          const cleaned = raw.filter(v => typeof v === "number" && !isNaN(v) && v > 0);
+          if (!cleaned.length) return;
+    
+          const ctx = document.getElementById(`spark-${t.symbol}`);
+          if (!ctx) return;
+    
+          const min = Math.min(...cleaned);
+          const max = Math.max(...cleaned);
+          const range = max - min;
+          const pad = range * 0.1;
+    
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: cleaned.map((_, i) => i),
+              datasets: [{
+                data: cleaned,
+                borderColor: "#60a5fa",
+                backgroundColor: "transparent",
+                borderWidth: 1,
+                pointRadius: 0,
+                tension: 0.3
+              }]
+            },
+            options: {
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { display: false },
+                y: {
+                  display: false,
+                  min: min - pad,
+                  max: max + pad
+                }
+              },
+              elements: {
+                line: { borderWidth: 1 },
+                point: { radius: 0 }
+              },
+              responsive: true,
+              maintainAspectRatio: false
+            }
+          });
+        })
+        .catch(err => console.error(`[Sparkline Error] ${t.symbol}`, err));
+    });
+    
+    function refreshQuotesAndCharts() {
+      tickers.forEach(t => {
+        fetch(`/api/quote/${encodeURIComponent(t.symbol)}`)
+          .then(res => res.json())
+          .then(data => {
+            const priceEl = document.getElementById(`${t.symbol}-price`);
+            const changeEl = document.getElementById(`${t.symbol}-change`);
+            const rangeEl = document.getElementById(`${t.symbol}-range`);
+            const sentimentEl = document.getElementById(`${t.symbol}-sentiment`);
+            const timestampEl = document.getElementById(`${t.symbol}-timestamp`);
+            const cardEl = document.getElementById(`card-${t.symbol}`);
+    
+            if (!data || data.error || !priceEl) return;
+    
+            const cls = data.change >= 0 ? "text-success" : data.change < 0 ? "text-error" : "text-warning";
+            const icon = data.change >= 1 ? "🐂" : data.change <= -1 ? "🐻" : "😐";
+    
+            priceEl.innerText = data.price.toFixed(2);
+            priceEl.classList.add("fade-update");
+    
+            let changeHtml = `<span class="${cls}">${data.change >= 0 ? '+' : ''}${data.change} (${data.percent}%)</span>`;
+            if (data.extended && cardEl) {
+              changeHtml += ` <span class="text-xs text-warning">(after hours)</span>`;
+              cardEl.classList.add("bg-base-300");
+            }
+    
+            changeEl.innerHTML = changeHtml;
+            changeEl.classList.add("fade-update");
+    
+            rangeEl.innerText = `Day Range: ${data.low ?? '—'} / ${data.high ?? '—'}`;
+            sentimentEl.innerText = icon;
+    
+            if (timestampEl && data.timestamp) {
+              timestampEl.innerText = `Last update: ${new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+            }
+          })
+          .catch(err => console.error(`[Quote Refresh Error] ${t.symbol}`, err));
+    
+        fetch(`/api/history/${encodeURIComponent(t.symbol)}`)
+          .then(res => res.json())
+          .then(data => {
+            const raw = data.values.map(v => v.value);
+            const cleaned = raw.filter(v => typeof v === "number" && !isNaN(v) && v > 0);
+            if (!cleaned.length) return;
+    
+            const ctx = document.getElementById(`spark-${t.symbol}`);
+            if (!ctx) return;
+    
+            const min = Math.min(...cleaned);
+            const max = Math.max(...cleaned);
+            const range = max - min;
+            const pad = range * 0.1;
+    
+            const chartInstance = Chart.getChart(ctx);
+            if (chartInstance) {
+              chartInstance.data.datasets[0].data = cleaned;
+              chartInstance.options.scales.y.min = min - pad;
+              chartInstance.options.scales.y.max = max + pad;
+              chartInstance.update();
+            }
+          })
+          .catch(err => console.error(`[Sparkline Refresh Error] ${t.symbol}`, err));
+      });
+    }
+    
+    function loadSniffScore() {
+      fetch("/api/composite_score")
+        .then(res => res.json())
+        .then(data => {
+          const score = data.composite_score;
+          const sniffEl = document.getElementById("sniff-score");
+          const descEl = document.getElementById("sniff-desc");
+    
+          if (score !== undefined && sniffEl && descEl) {
+            sniffEl.innerText = score.toFixed(2);
+    
+            let label = "";
+            if (score >= 81) label = "🚨 Crisis (Extreme Risk-Off)";
+            else if (score >= 61) label = "⚠️ Risk-Off (Stress Rising)";
+            else if (score >= 41) label = "😐 Neutral / Mixed Signals";
+            else if (score >= 21) label = "😎 Risk-On (Optimism)";
+            else label = "🌈 Ultra Risk-On (Euphoria)";
+    
+            descEl.innerText = label;
+          }
+        })
+        .catch(err => {
+          console.error("[Sniff Score Error]", err);
+          const sniffEl = document.getElementById("sniff-score");
+          const descEl = document.getElementById("sniff-desc");
+          if (sniffEl) sniffEl.innerText = "N/A";
+          if (descEl) descEl.innerText = "Error fetching score";
+        });
+    }
+    
+    function showSniffMath() {
+      fetch("/api/sniff_score_math")
+        .then(res => res.json())
+        .then(data => {
+          const pre = document.getElementById("sniff-math-content");
+          const dialog = document.getElementById("sniff-math-modal");
+          if (!pre || !dialog || !data || !data.components) return;
+    
+          const { value, weights = {}, components = {}, inputs = {} } = data;
+          let out = `📈 Composite Score: ${value.toFixed(2)}\n`;
+    
+          const labelToKey = {
+            "Rates & Curve": "rates_and_curve",
+            "Credit & Volatility": "credit_and_volatility",
+            "Macro": "macro_indicators",
+            "Flight to Safety": "flight_to_safety"
+          };
+    
+          Object.entries(components).forEach(([label, score]) => {
+            const weight = weights[label] ? (weights[label] * 100).toFixed(0) : "?";
+            out += `\n🔹 ${label} — ${score.toFixed(2)} (Weight: ${weight}%)\n`;
+    
+            const sectionKey = labelToKey[label];
+            const section = inputs[sectionKey];
+            if (section && typeof section === "object") {
+              Object.entries(section).forEach(([k, v]) => {
+                const val = (typeof v === "number") ? v.toFixed(2) : v;
+                out += `   - ${k}: ${val}\n`;
+              });
+            }
+          });
+    
+          pre.textContent = out;
+          dialog.showModal();
+        })
+        .catch(err => {
+          alert("Error loading sniff score math");
+          console.error("[Sniff Math Error]", err);
+        });
+    }
+    
+    function closeSniffMath() {
+      const dialog = document.getElementById("sniff-math-modal");
+      if (dialog && dialog.close) dialog.close();
+    }
+    
+    refreshQuotesAndCharts();
+    loadSniffScore();
+      
+    window.onload = function () {
+      let sniffRefresh = 60;
+      let tickerRefresh = 10;
+    
+      const sniffEl = document.getElementById("next-sniff-refresh");
+      const tickerEl = document.getElementById("next-ticker-refresh");
+    
+      function tickTimers() {
+        if (sniffEl) {
+          sniffEl.innerText = `Next score refresh in ${sniffRefresh}s`;
+          sniffRefresh--;
+          if (sniffRefresh < 0) {
+            sniffRefresh = 60;
+            loadSniffScore();
+          }
+        }
+    
+        if (tickerEl) {
+          tickerEl.innerText = `Next ticker refresh in ${tickerRefresh}s`;
+          tickerRefresh--;
+          if (tickerRefresh < 0) {
+            tickerRefresh = 10;
+            refreshQuotesAndCharts();
+          }
+        }
+      }
+    
+      setInterval(tickTimers, 1000);
+    };
+  </script>
+</body>
+</html>
